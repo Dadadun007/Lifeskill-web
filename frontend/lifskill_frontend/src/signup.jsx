@@ -63,7 +63,7 @@ function Signup() {
     
               <div className="flex flex-col">
                 <label htmlFor="email" className="font-medium text-lg text-gray-700">
-                  Gmail
+                  Email
                 </label>
                 <input
                   type="email"
