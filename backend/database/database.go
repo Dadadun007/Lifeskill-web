@@ -37,4 +37,5 @@ func ConnectDatabase() {
 	}
 
 	fmt.Println("Successfully Database connected!")
+
 }
