@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"time"
+
 	_ "github.com/lib/pq"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -19,10 +20,12 @@ const (
 	dbname   = "lifeskill" 
 )
 
+var DB *gorm.DB
+
 func ConnectDatabase() {
 	
 	// Connection string
-		dsn := fmt.Sprintf("host=%s port=%d user=%s "+
+	dsn := fmt.Sprintf("host=%s port=%d user=%s "+
 	"password=%s dbname=%s sslmode=disable",
 	host, port, user, password, dbname)
 
@@ -35,16 +38,17 @@ func ConnectDatabase() {
 		},
 	) 
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: newLogger, // add Logger
-	  })
+	var err error
+	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: newLogger,
+	})
 
 	if err != nil {
 		panic("failed to connect to database")
 	}
 
 	// Initialize GORM
-	db.AutoMigrate(&User{})
+	DB.AutoMigrate(&User{})
 	// table อื่น ๆ ต่ออีก
 
 	fmt.Println("Database migration completed!")

@@ -4,10 +4,13 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/dadadun/lifskill/database"
 	"fmt"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 )
 
 func main() {
 	app := fiber.New()
+	app.Use(cors.New())
+	
 	fmt.Println("Starting application...")
 
 	database.ConnectDatabase()
@@ -27,8 +30,9 @@ func main() {
 	})
   
 	// about authentication
-
-
+	app.Post("/register", func(c *fiber.Ctx) error {
+		return database.CreateUser(database.DB, c)
+	})
 
 	app.Listen(":8080")
   }
