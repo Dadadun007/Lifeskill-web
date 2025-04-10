@@ -1,11 +1,14 @@
 package database
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
-
+	"os"
+	"time"
 	_ "github.com/lib/pq"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 const (
@@ -16,26 +19,34 @@ const (
 	dbname   = "lifeskill" 
 )
 
-var DB *sql.DB
-
 func ConnectDatabase() {
+	
 	// Connection string
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-		"password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname)
+		dsn := fmt.Sprintf("host=%s port=%d user=%s "+
+	"password=%s dbname=%s sslmode=disable",
+	host, port, user, password, dbname)
 
-	var err error
-	DB, err = sql.Open("postgres", psqlInfo)
+	newLogger := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+		logger.Config{
+		  SlowThreshold: time.Second,  // Show SQL threshold
+		  LogLevel:      logger.Info,  // Log level
+		  Colorful:      true,         // Enable color
+		},
+	) 
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: newLogger, // add Logger
+	  })
+
 	if err != nil {
-		log.Fatal(err)
+		panic("failed to connect to database")
 	}
 
-	// Check the connection
-	err = DB.Ping()
-	if err != nil {
-		log.Fatal(err)
-	}
+	// Initialize GORM
+	db.AutoMigrate(&User{})
+	// table อื่น ๆ ต่ออีก
 
-	fmt.Println("Successfully Database connected!")
-
+	fmt.Println("Database migration completed!")
+	fmt.Println("Database connection established successfully!")
 }
