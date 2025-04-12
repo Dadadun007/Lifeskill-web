@@ -1,21 +1,44 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isError, setIsError] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (email.trim() === '' || password.trim() === '') {
       setIsError(true);
-    } else {
-      setIsError(false);
-      console.log('Email:', email);
-      console.log('Password:', password);
-      // TODO: connect to backend API
+      return;
+    }
+
+    setIsError(false);
+
+    try {
+      const response = await fetch('http://localhost:8080/login', {
+        method: 'POST',
+        credentials: 'include', // 👈 important to receive cookies
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: email,
+          password: password
+        })
+      });
+
+      if (response.ok) {
+        alert('You logined this website!');
+        navigate('/mypage'); // redirect to your page after login
+      } else {
+        setIsError(true);
+      }
+    } catch (error) {
+      console.error('Login failed:', error);
+      setIsError(true);
     }
   };
 
@@ -60,7 +83,7 @@ function Login() {
 
         {isError && (
           <div className="text-red-600 font-medium text-sm text-center">
-            Please fill in both fields.
+            Login failed. Please check your credentials.
           </div>
         )}
 
