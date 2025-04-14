@@ -48,8 +48,18 @@ func ConnectDatabase() {
 	}
 
 	// Initialize GORM
-	DB.AutoMigrate(&User{})
-	// table อื่น ๆ ต่ออีก
+	DB.AutoMigrate(
+		&User{},
+		&Post{},
+		&Category{},
+		&PostCategory{},
+		&UserExpertCategory{},
+	)
+	
+	// many to many relationship
+	DB.SetupJoinTable(&Post{}, "PostCategories", &PostCategory{})
+	DB.SetupJoinTable(&User{}, "ExpertCategories", &UserExpertCategory{})
+
 
 	fmt.Println("Database migration completed!")
 	fmt.Println("Database connection established successfully!")
