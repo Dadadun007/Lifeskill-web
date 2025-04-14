@@ -21,6 +21,7 @@ type User struct {
 	Posts    []Post `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 	ExpertCategories []Category `gorm:"many2many:user_expert_categories;"`
 	TotalAchievement     []TotalAchievement `gorm:"many2many:Total_Achievement"`
+	PostApproval      []PostApproval `gorm:"any2many:post_approval;"`
 }
 
 func CreateUser(db *gorm.DB, c *fiber.Ctx) error {

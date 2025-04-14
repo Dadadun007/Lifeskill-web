@@ -2,7 +2,7 @@ package database
 
 import (
 	"gorm.io/gorm"
-	
+	"time"
 )
 
 type Post struct {
@@ -17,5 +17,15 @@ type Post struct {
 	UserID            uint       `gorm:"not null"`
 	User   			  User 		 `gorm:"foreignKey:UserID;references:ID"`
 	Categories        []Category `gorm:"many2many:post_categories;"`
+	PostApproval      []PostApproval `gorm:"any2many:post_approval;"`
+}
+
+type PostApproval struct {
+    PostID     uint 	`gorm:"primaryKey"`
+    UserID     uint 	`gorm:"primaryKey"`
+	ApprovedAt time.Time `gorm:"not null;default:current_timestamp"`
+
+	Post     Post     `gorm:"foreignKey:PostID;references:ID"`
+	User     User     `gorm:"foreignKey:UserID;references:ID"`
 }
 
