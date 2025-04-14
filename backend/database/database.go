@@ -56,6 +56,7 @@ func ConnectDatabase() {
 		&UserExpertCategory{},
 		&TotalAchievement{},
 		&PostApproval{},
+		&Comment{},
 	)
 	
 	// many to many relationship

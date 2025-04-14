@@ -18,6 +18,7 @@ type Post struct {
 	User   			  User 		 `gorm:"foreignKey:UserID;references:ID"`
 	Categories        []Category `gorm:"many2many:post_categories;"`
 	PostApproval      []PostApproval `gorm:"any2many:post_approval;"`
+	Comments          []Comment  `gorm:"foreignKey:PostID;constraint:OnDelete:CASCADE"`
 }
 
 type PostApproval struct {

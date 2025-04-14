@@ -18,10 +18,11 @@ type User struct {
     Age      int    `json:"age"`
     Sex      string `gorm:"size:10" json:"sex"`
 	Picture  string `gorm:"size:255" json:"picture"`
-	Posts    []Post `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
-	ExpertCategories []Category `gorm:"many2many:user_expert_categories;"`
-	TotalAchievement     []TotalAchievement `gorm:"many2many:Total_Achievement"`
-	PostApproval      []PostApproval `gorm:"any2many:post_approval;"`
+	Posts    			[]Post 				`gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	ExpertCategories 	[]Category 			`gorm:"many2many:user_expert_categories;"`
+	TotalAchievement 	[]TotalAchievement 	`gorm:"many2many:Total_Achievement"`
+	PostApproval      	[]PostApproval 		`gorm:"many2many:post_approval;"`
+	Comments         	[]Comment         	`gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 }
 
 func CreateUser(db *gorm.DB, c *fiber.Ctx) error {
