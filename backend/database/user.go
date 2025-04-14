@@ -20,7 +20,7 @@ type User struct {
 	Picture  string `gorm:"size:255" json:"picture"`
 	Posts    []Post `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 	ExpertCategories []Category `gorm:"many2many:user_expert_categories;"`
-	
+	TotalAchievement     []TotalAchievement `gorm:"many2many:Total_Achievement"`
 }
 
 func CreateUser(db *gorm.DB, c *fiber.Ctx) error {

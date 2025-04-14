@@ -54,11 +54,13 @@ func ConnectDatabase() {
 		&Category{},
 		&PostCategory{},
 		&UserExpertCategory{},
+		&TotalAchievement{},
 	)
 	
 	// many to many relationship
 	DB.SetupJoinTable(&Post{}, "PostCategories", &PostCategory{})
 	DB.SetupJoinTable(&User{}, "ExpertCategories", &UserExpertCategory{})
+	DB.SetupJoinTable(&User{}, "TotalAchievement", &TotalAchievement{})
 
 
 	fmt.Println("Database migration completed!")
