@@ -74,7 +74,7 @@ func main() {
 	})
 
 	// รอใส่ route ที่ต้อง login ก่อน
-	app.Use("/category", "/post", authRequired)
+	app.Use("/category", authRequired)
 
 	// add category
 	app.Post("/category", func(c *fiber.Ctx) error {
@@ -85,6 +85,10 @@ func main() {
 	app.Post("/post", func(c *fiber.Ctx) error {
 		return database.CreatePost(database.DB, c)
 	})
+
+	app.Get("/post", database.GetAllPosts(database.DB))
+
+	app.Get("/post/:id", database.GetPostByID(database.DB))
 
 	app.Listen(":8080")
 }

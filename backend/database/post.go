@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-
+    "strconv"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
@@ -106,4 +106,120 @@ func CreatePost(db *gorm.DB, c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(fullPost)
+}
+
+type PostDTO struct {
+	ID                uint            `json:"id"`
+	Title             string          `json:"title"`
+	Content           string          `json:"content"`
+	Picture           string          `json:"picture"`
+	RecommendAgeRange string          `json:"recommend_age_range"`
+	Status            string          `json:"status"`
+	Categories        []CategoryDTO   `json:"categories"`
+	User              UserDTO         `json:"user"`
+}
+
+type CategoryDTO struct {
+	ID             uint   `json:"id"`
+	CategoriesName string `json:"categories_name"`
+}
+
+type UserDTO struct {
+	Username string `json:"username"`
+	Picture  string `json:"picture"`
+}
+
+func GetAllPosts(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		page, _ := strconv.Atoi(c.Query("page", "1"))
+		limit, _ := strconv.Atoi(c.Query("limit", "10"))
+		if page < 1 {
+			page = 1
+		}
+		if limit < 1 {
+			limit = 10
+		}
+
+		var posts []Post
+		offset := (page - 1) * limit
+
+		if err := db.Preload("User").
+			Preload("Categories").
+			Limit(limit).
+			Offset(offset).
+			Order("created_at desc").
+			Find(&posts).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to fetch posts",
+			})
+		}
+
+		// Mapping Post -> PostDTO
+		var postDTOs []PostDTO
+		for _, post := range posts {
+			var categories []CategoryDTO
+			for _, cat := range post.Categories {
+				categories = append(categories, CategoryDTO{
+					ID:             cat.ID,
+					CategoriesName: cat.CategoriesName,
+				})
+			}
+
+			postDTO := PostDTO{
+				ID:                post.ID,
+				Title:             post.Title,
+				Content:           post.Content,
+				Picture:           post.Picture,
+				RecommendAgeRange: post.RecommendAgeRange,
+				Status:            post.Status,
+				Categories:        categories,
+				User: UserDTO{
+					Username: post.User.Username,
+					Picture:  post.User.Picture,
+				},
+			}
+			postDTOs = append(postDTOs, postDTO)
+		}
+
+		return c.JSON(postDTOs)
+	}
+}
+
+func GetPostByID(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		id := c.Params("id")
+		var post Post
+		if err := db.Preload("User").
+			Preload("Categories").
+			First(&post, id).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Post not found",
+			})
+		}
+
+		// Mapping Post -> PostDTO
+		var categories []CategoryDTO
+		for _, cat := range post.Categories {
+			categories = append(categories, CategoryDTO{
+				ID:             cat.ID,
+				CategoriesName: cat.CategoriesName,
+			})
+		}
+
+		postDTO := PostDTO{
+			ID:                post.ID,
+			Title:             post.Title,
+			Content:           post.Content,
+			Picture:           post.Picture,
+			RecommendAgeRange: post.RecommendAgeRange,
+			Status:            post.Status,
+			Categories:        categories,
+			User: UserDTO{
+				Username: post.User.Username,
+				Picture:  post.User.Picture,
+			},
+		}
+
+		return c.JSON(postDTO)
+	}
 }
