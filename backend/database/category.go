@@ -23,7 +23,7 @@ type PostCategory struct {
 
 type UserExpertCategory struct {
 	UserID     uint `gorm:"primaryKey"` 
-	CategoryID uint `gorm:"primaryKey;column:Categories_id"`
+	CategoryID uint `gorm:"primaryKey"`
 
 	User     User     `gorm:"foreignKey:UserID;references:ID"`
 	Category Category `gorm:"foreignKey:CategoryID;references:ID"`

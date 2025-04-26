@@ -223,3 +223,4 @@ func GetPostByID(db *gorm.DB) fiber.Handler {
 		return c.JSON(postDTO)
 	}
 }
+
