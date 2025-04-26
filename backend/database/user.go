@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
 	"time"
+	"strconv"
 	
 )
 
@@ -47,37 +48,41 @@ func CreateUser(db *gorm.DB, c *fiber.Ctx) error {
 func LoginUser(db *gorm.DB, c *fiber.Ctx) error {
 	var input User
 	var user User
-  
+
 	if err := c.BodyParser(&input); err != nil {
-	  return err
+		return err
 	}
-  
-	// Find user by username
-	db.Where("email = ?", input.Email).First(&user)
-  
+
+	// Find user by email
+	if err := db.Where("email = ?", input.Email).First(&user).Error; err != nil {
+		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+
 	// Check password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.Password)); err != nil {
-	  return c.SendStatus(fiber.StatusUnauthorized)
+		return c.SendStatus(fiber.StatusUnauthorized)
 	}
-  
-	// Create JWT token
-	token := jwt.New(jwt.SigningMethodHS256)
-	claims := token.Claims.(jwt.MapClaims)
-	claims["user_id"] = user.ID
-	claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
-  
+
+	// Create JWT token with StandardClaims
+	claims := jwt.StandardClaims{
+		Subject:   strconv.Itoa(int(user.ID)), // ใช้ userID เป็น Subject
+		ExpiresAt: time.Now().Add(72 * time.Hour).Unix(),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
 	t, err := token.SignedString(JwtSecretKey)
 	if err != nil {
-	  return c.SendStatus(fiber.StatusInternalServerError)
+		return c.SendStatus(fiber.StatusInternalServerError)
 	}
-  
-	// Set cookie
+
+	// Set JWT token in cookie
 	c.Cookie(&fiber.Cookie{
-	  Name:     "jwt",
-	  Value:    t,
-	  Expires:  time.Now().Add(time.Hour * 72),
-	  HTTPOnly: true,
+		Name:     "jwt",
+		Value:    t,
+		Expires:  time.Now().Add(72 * time.Hour),
+		HTTPOnly: true,
 	})
-  
+
 	return c.JSON(fiber.Map{"message": "success"})
 }

@@ -2,6 +2,7 @@ package database
 
 import (
 	"gorm.io/gorm"
+	"github.com/gofiber/fiber/v2"
 )
 
 type Category struct {
@@ -35,4 +36,13 @@ type TotalAchievement struct {
 	Category   Category  `gorm:"foreignKey:CategoryID;;references:ID"`
 	
 	Score      int       `gorm:"default:0"`
+}
+
+func CreateCategory(db *gorm.DB, c *fiber.Ctx) error {
+	category := new(Category)
+	if err := c.BodyParser(category); err != nil {
+	  return err
+	}
+	db.Create(&category)
+	return c.JSON(category)
 }

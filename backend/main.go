@@ -6,21 +6,41 @@ import (
 	"fmt"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/golang-jwt/jwt/v4"
+	"strconv"
 )
 
 func authRequired(c *fiber.Ctx) error {
 	cookie := c.Cookies("jwt")
-  
+	if cookie == "" {
+		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+
+	// Parse JWT token
 	token, err := jwt.ParseWithClaims(cookie, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return database.JwtSecretKey, nil
 	})
-  
+
 	if err != nil || !token.Valid {
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}
-  
+
+	// Extract user ID from claims
+	claims, ok := token.Claims.(*jwt.StandardClaims)
+	if !ok {
+		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+
+	userID, err := strconv.ParseUint(claims.Subject, 10, 64)
+	if err != nil {
+		return c.SendStatus(fiber.StatusUnauthorized)
+	}
+
+	// Save userID ลง Context
+	c.Locals("userID", uint(userID))
+
 	return c.Next()
 }
+
 
 func main() {
 	app := fiber.New()
@@ -54,7 +74,17 @@ func main() {
 	})
 
 	// รอใส่ route ที่ต้อง login ก่อน
-	app.Use("/still_fixing", authRequired)
+	app.Use("/category", "/post", authRequired)
+
+	// add category
+	app.Post("/category", func(c *fiber.Ctx) error {
+		return database.CreateCategory(database.DB, c)
+	})
+
+	// สร้างโพสต์
+	app.Post("/post", func(c *fiber.Ctx) error {
+		return database.CreatePost(database.DB, c)
+	})
 
 	app.Listen(":8080")
-  }
+}
