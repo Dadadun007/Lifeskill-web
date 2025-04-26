@@ -199,3 +199,56 @@ func UpdateUser(db *gorm.DB, c *fiber.Ctx) error {
 
 	return c.JSON(user)
 }
+
+func ChangePassword(db *gorm.DB, c *fiber.Ctx) error {
+	// ดึง userID มาจาก JWT (ผ่าน middleware)
+	userID := c.Locals("userID").(uint)
+
+	// Find the user
+	var user User
+	if err := db.First(&user, userID).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "User not found",
+		})
+	}
+
+	// รับข้อมูลเก่ากับใหม่
+	var input struct {
+		OldPassword string `json:"oldPassword"`
+		NewPassword string `json:"newPassword"`
+	}
+
+	if err := c.BodyParser(&input); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Invalid input",
+		})
+	}
+
+	// ตรวจสอบรหัสผ่านเก่า
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(input.OldPassword)); err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Old password is incorrect",
+		})
+	}
+
+	// Hash รหัสผ่านใหม่
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to hash new password",
+		})
+	}
+
+	// อัปเดตใน database
+	user.Password = string(hashedPassword)
+	if err := db.Save(&user).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to update password",
+		})
+	}
+
+	return c.JSON(fiber.Map{
+		"message": "Password updated successfully",
+	})
+}
+

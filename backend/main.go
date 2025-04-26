@@ -94,5 +94,9 @@ func main() {
 		return database.UpdateUser(database.DB, c)
 	})
 
+	app.Put("/user/change-password", func(c *fiber.Ctx) error {
+		return database.ChangePassword(database.DB, c)
+	})
+
 	app.Listen(":8080")
 }
