@@ -15,7 +15,7 @@ type Category struct {
 
 type PostCategory struct {
 	PostID     uint `gorm:"primaryKey"`
-	CategoryID uint `gorm:"primaryKey;column:Categories_id"`
+	CategoryID uint `gorm:"primaryKey"`
 
 	Post     Post     `gorm:"foreignKey:PostID;references:ID"`
 	Category Category `gorm:"foreignKey:CategoryID;references:ID"`

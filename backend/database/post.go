@@ -1,13 +1,12 @@
 package database
 
 import (
+	"encoding/json"
 	"fmt"
-	"strconv"
-	"strings"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
-	"time"
 )
 
 type Post struct {
@@ -37,123 +36,74 @@ type PostApproval struct {
 }
 
 // ส่ง input ของ Post
-type CreatePostInput struct {
+type CreatePostRequest struct {
 	Title             string `json:"title"`
 	Content           string `json:"content"`
-	Picture           string `json:"picture"`
-	RecommendAgeRange string `json:"recommend_age_range"`
-	CategoryIDs       []uint `json:"category_ids"` // <<< รับ array ของ Category id in Json "category_ids": [1, 2]
+	RecommendAgeRange string `json:"RecommendAgeRange"`
+	Categories        []uint `json:"Categories"`
 }
 
 func CreatePost(db *gorm.DB, c *fiber.Ctx) error {
-    // Parse form
-    var input CreatePostInput
-    if err := c.BodyParser(&input); err != nil {
-        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-            "error": "Failed to parse form: " + fmt.Sprint(err),
-        })
-    }
-    
-    // Get form values directly
-    title := c.FormValue("title")
-    content := c.FormValue("content")
-    recommendAgeRange := c.FormValue("recommendAgeRange")
-    categoryIDsStr := c.FormValue("categoryIds") // Check the exact field name in your form
-    
-    // Parse category IDs
-    var categoryIDs []uint
-    // First try as comma-separated list
-    if categoryIDsStr != "" {
-        for _, idStr := range strings.Split(categoryIDsStr, ",") {
-            if id, err := strconv.ParseUint(strings.TrimSpace(idStr), 10, 32); err == nil {
-                categoryIDs = append(categoryIDs, uint(id))
-            }
-        }
-    }
-    
-    fmt.Println("CategoryIDs parsed:", categoryIDs, "from string:", categoryIDsStr)
-    
-    userID := c.Locals("userID").(uint)
-    
-    // Upload Picture
-    file, err := c.FormFile("picture")
-    if err != nil {
-        return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-            "error": "Picture upload failed: " + err.Error(),
-        })
-    }
-    
-    filePath := fmt.Sprintf("./uploads/%s", file.Filename)
-    if err := c.SaveFile(file, filePath); err != nil {
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-            "error": "Failed to save picture: " + err.Error(),
-        })
-    }
-    
-    // Create Post object
-    post := Post{
-        Title:             title,
-        Content:           content,
-        Picture:           file.Filename,
-        RecommendAgeRange: recommendAgeRange,
-        Status:            "pending",
-        ApprovedUsers:     0,
-        UserID:            userID,
-    }
-    
-    // Start transaction
-    tx := db.Begin()
-    
-    // Save Post to database
-    if err := tx.Create(&post).Error; err != nil {
-        tx.Rollback()
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-            "error": "Failed to create post: " + err.Error(),
-        })
-    }
-    
-    // Associate Categories - directly create entries in junction table
-    if len(categoryIDs) > 0 {
-        for _, catID := range categoryIDs {
-            // Check if category exists
-            var category Category
-            if err := tx.First(&category, catID).Error; err != nil {
-                tx.Rollback()
-                return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-                    "error": fmt.Sprintf("Category with ID %d not found", catID),
-                })
-            }
-            
-            // Create association
-            postCategory := PostCategory{
-                PostID:     post.ID,
-                CategoryID: catID,
-            }
-            
-            if err := tx.Create(&postCategory).Error; err != nil {
-                tx.Rollback()
-                return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-                    "error": "Failed to link category: " + err.Error(),
-                })
-            }
-        }
-    }
-    
-    // Commit transaction
-    if err := tx.Commit().Error; err != nil {
-        return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-            "error": "Failed to commit transaction: " + err.Error(),
-        })
-    }
-    
-    // Fetch complete post with associations
-    var fullPost Post
-    if err := db.Preload("User").Preload("Categories").First(&fullPost, post.ID).Error; err != nil {
-        return c.Status(fiber.StatusOK).JSON(fiber.Map{
-            "message": "Post created but failed to load details",
-            "postID":  post.ID,
-        })
-    }
-    
-    return c.Status(fiber.StatusCreated).JSON(fullPost)
+	userID := c.Locals("userID").(uint)
+
+	// 1. Parse the `post` field (JSON inside FormData)
+	postData := new(CreatePostRequest)
+	if err := json.Unmarshal([]byte(c.FormValue("post")), postData); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Failed to parse post JSON: " + err.Error(),
+		})
+	}
+
+	// 2. Parse the uploaded file
+	file, err := c.FormFile("picture")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Picture upload failed: " + err.Error(),
+		})
+	}
+	filePath := fmt.Sprintf("./uploads/%s", file.Filename)
+	if err := c.SaveFile(file, filePath); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to save picture: " + err.Error(),
+		})
+	}
+
+	// 3. Find categories
+	var categories []Category
+	if len(postData.Categories) > 0 {
+		if err := db.Where("id IN ?", postData.Categories).Find(&categories).Error; err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Some categories not found: " + err.Error(),
+			})
+		}
+	}
+
+	// 4. Create Post
+	post := Post{
+		Title:             postData.Title,
+		Content:           postData.Content,
+		Picture:           file.Filename,
+		RecommendAgeRange: postData.RecommendAgeRange,
+		Status:            "pending",
+		ApprovedUsers:     0,
+		UserID:            userID,
+		Categories:        categories,
+	}
+
+	if err := db.Create(&post).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to create post: " + err.Error(),
+		})
+	}
+
+	// 5. Return full post with relations
+	var fullPost Post
+	if err := db.Preload("User").Preload("Categories").First(&fullPost, post.ID).Error; err != nil {
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{
+			"message": "Post created but failed to load details",
+			"postID":  post.ID,
+		})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(fullPost)
 }
