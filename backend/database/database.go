@@ -65,6 +65,7 @@ func ConnectDatabase() {
 	DB.SetupJoinTable(&User{}, "ExpertCategories", &UserExpertCategory{})
 	DB.SetupJoinTable(&User{}, "TotalAchievement", &TotalAchievement{})
 	DB.SetupJoinTable(&Post{}, "PostApproval", &PostApproval{})
+	DB.SetupJoinTable(&Post{}, "PostLike", &PostLike{})
 
 
 	fmt.Println("Database migration completed!")
