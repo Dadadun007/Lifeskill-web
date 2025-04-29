@@ -90,6 +90,8 @@ func main() {
 
 	app.Get("/post/:id", database.GetPostByID(database.DB))
 
+	app.Delete("/posts/:id", database.DeletePost(database.DB))
+
 	app.Put("/user", func(c *fiber.Ctx) error {
 		return database.UpdateUser(database.DB, c)
 	})

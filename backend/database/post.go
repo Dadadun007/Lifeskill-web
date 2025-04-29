@@ -224,3 +224,34 @@ func GetPostByID(db *gorm.DB) fiber.Handler {
 	}
 }
 
+func DeletePost(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		postID := c.Params("id")
+		userID := c.Locals("userID").(uint)
+
+		var post Post
+		if err := db.First(&post, postID).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Post not found",
+			})
+		}
+
+		// Check ownership
+		if post.UserID != userID {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+				"error": "You are not authorized to delete this post",
+			})
+		}
+
+		// Delete the post and its related records
+		if err := db.Delete(&post).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to delete post",
+			})
+		}
+
+		return c.JSON(fiber.Map{
+			"message": "Post deleted successfully",
+		})
+	}
+}
