@@ -369,3 +369,49 @@ func LikePost(db *gorm.DB) fiber.Handler {
 		})
 	}
 }
+
+func GetMyPosts(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userID := c.Locals("userID").(uint)
+
+		var posts []Post
+		if err := db.
+			Preload("User").
+			Preload("Categories").
+			Where("user_id = ?", userID).
+			Order("created_at desc").
+			Find(&posts).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to fetch your posts",
+			})
+		}
+
+		var postDTOs []PostDTO
+		for _, post := range posts {
+			var categories []CategoryDTO
+			for _, cat := range post.Categories {
+				categories = append(categories, CategoryDTO{
+					ID:             cat.ID,
+					CategoriesName: cat.CategoriesName,
+				})
+			}
+
+			postDTO := PostDTO{
+				ID:                post.ID,
+				Title:             post.Title,
+				Content:           post.Content,
+				Picture:           post.Picture,
+				RecommendAgeRange: post.RecommendAgeRange,
+				Status:            post.Status,
+				Categories:        categories,
+				User: UserDTO{
+					Username: post.User.Username,
+					Picture:  post.User.Picture,
+				},
+			}
+			postDTOs = append(postDTOs, postDTO)
+		}
+
+		return c.JSON(postDTOs)
+	}
+}

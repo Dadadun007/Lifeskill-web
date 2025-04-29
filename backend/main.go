@@ -96,6 +96,8 @@ func main() {
 
 	app.Put("/posts/:id/like", database.LikePost(database.DB))
 
+	app.Get("/my-posts", database.GetMyPosts(database.DB))
+
 
 	app.Put("/user", func(c *fiber.Ctx) error {
 		return database.UpdateUser(database.DB, c)
