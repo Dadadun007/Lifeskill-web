@@ -255,3 +255,117 @@ func DeletePost(db *gorm.DB) fiber.Handler {
 		})
 	}
 }
+
+func SearchPosts(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		query := c.Query("q", "")
+		page, _ := strconv.Atoi(c.Query("page", "1"))
+		limit, _ := strconv.Atoi(c.Query("limit", "10"))
+		if page < 1 {
+			page = 1
+		}
+		if limit < 1 {
+			limit = 10
+		}
+		offset := (page - 1) * limit
+
+		var posts []Post
+
+		if err := db.Preload("User").
+			Preload("Categories").
+			Joins("LEFT JOIN post_categories pc ON pc.post_id = posts.id").
+			Joins("LEFT JOIN categories c ON c.id = pc.category_id").
+			Where("posts.title ILIKE ? OR c.categories_name ILIKE ?", "%"+query+"%", "%"+query+"%").
+			Distinct("posts.*").
+			Limit(limit).
+			Offset(offset).
+			Order("posts.created_at desc").
+			Find(&posts).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to search posts: " + err.Error(),
+			})
+		}
+
+		// Map to DTO
+		var postDTOs []PostDTO
+		for _, post := range posts {
+			var categories []CategoryDTO
+			for _, cat := range post.Categories {
+				categories = append(categories, CategoryDTO{
+					ID:             cat.ID,
+					CategoriesName: cat.CategoriesName,
+				})
+			}
+
+			postDTOs = append(postDTOs, PostDTO{
+				ID:                post.ID,
+				Title:             post.Title,
+				Content:           post.Content,
+				Picture:           post.Picture,
+				RecommendAgeRange: post.RecommendAgeRange,
+				Status:            post.Status,
+				Categories:        categories,
+				User: UserDTO{
+					Username: post.User.Username,
+					Picture:  post.User.Picture,
+				},
+			})
+		}
+
+		return c.JSON(postDTOs)
+	}
+}
+
+type PostLike struct {
+	PostID uint `gorm:"primaryKey"`
+	UserID uint `gorm:"primaryKey"`
+
+	Post Post `gorm:"foreignKey:PostID;constraint:OnDelete:CASCADE"`
+	User User `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+}
+
+func LikePost(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userID := c.Locals("userID").(uint) // from middleware
+		postID := c.Params("id")
+
+		var post Post
+		if err := db.First(&post, postID).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Post not found",
+			})
+		}
+
+		// Check if this user already liked this post
+		var existingLike PostLike
+		if err := db.Where("post_id = ? AND user_id = ?", postID, userID).First(&existingLike).Error; err == nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "You have already liked this post",
+			})
+		}
+
+		// Add the like
+		newLike := PostLike{
+			PostID: post.ID,
+			UserID: userID,
+		}
+		if err := db.Create(&newLike).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to like post",
+			})
+		}
+
+		// Increment the Like count on the Post
+		post.Like++
+		if err := db.Save(&post).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to update post like count",
+			})
+		}
+
+		return c.JSON(fiber.Map{
+			"message": "Post liked successfully",
+			"likes":   post.Like,
+		})
+	}
+}

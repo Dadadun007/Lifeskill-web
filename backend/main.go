@@ -92,6 +92,11 @@ func main() {
 
 	app.Delete("/posts/:id", database.DeletePost(database.DB))
 
+	app.Get("/posts/search", database.SearchPosts(database.DB))
+
+	app.Put("/posts/:id/like", database.LikePost(database.DB))
+
+
 	app.Put("/user", func(c *fiber.Ctx) error {
 		return database.UpdateUser(database.DB, c)
 	})
