@@ -114,5 +114,8 @@ func main() {
 
 	app.Get("/filter_posts", database.FilterPosts(database.DB))
 
+	app.Put("/approve_post/:id", authRequired, database.ApprovePost(database.DB))
+	app.Get("/approved_posts", database.GetApprovedPosts(database.DB))
+
 	app.Listen(":8080")
 }

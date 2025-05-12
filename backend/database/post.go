@@ -476,3 +476,236 @@ func FilterPosts(db *gorm.DB) fiber.Handler {
 		return c.JSON(postDTOs)
 	}
 }
+
+// Approve a post by an expert user
+func ApprovePost(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userID := c.Locals("userID").(uint)
+		postID := c.Params("id")
+
+		// Find the post
+		var post Post
+		if err := db.Preload("Categories").First(&post, postID).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Post not found"})
+		}
+
+		// Check if user is expert in any of the post's categories
+		var user User
+		if err := db.Preload("ExpertCategories").First(&user, userID).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "User not found"})
+		}
+
+		isExpert := false
+		for _, postCat := range post.Categories {
+			for _, expertCat := range user.ExpertCategories {
+				if postCat.ID == expertCat.ID {
+					isExpert = true
+					break
+				}
+			}
+		}
+		if !isExpert {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "You are not an expert in this post's category"})
+		}
+
+		// Check if this user already approved this post
+		var existingApproval PostApproval
+		if err := db.Where("post_id = ? AND user_id = ?", post.ID, userID).First(&existingApproval).Error; err == nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "You have already approved this post"})
+		}
+
+		// Add approval
+		approval := PostApproval{
+			PostID:     post.ID,
+			UserID:     userID,
+			ApprovedAt: time.Now(),
+		}
+		if err := db.Create(&approval).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to approve post"})
+		}
+
+		// Count total unique expert approvals for this post
+		var approvalCount int64
+		db.Model(&PostApproval{}).Where("post_id = ?", post.ID).Count(&approvalCount)
+
+		if approvalCount >= 3 && post.Status != "approved" {
+			post.Status = "approved"
+			if err := db.Save(&post).Error; err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update post status"})
+			}
+		}
+
+		return c.JSON(fiber.Map{"message": "Post approved", "current_approvals": approvalCount, "status": post.Status})
+	}
+}
+
+// Get only approved posts
+func GetApprovedPosts(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var posts []Post
+		if err := db.Preload("User").Preload("Categories").Where("status = ?", "approved").Order("created_at desc").Find(&posts).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch approved posts"})
+		}
+		// Map to DTOs
+		var postDTOs []PostDTO
+		for _, post := range posts {
+			var categories []CategoryDTO
+			for _, cat := range post.Categories {
+				categories = append(categories, CategoryDTO{
+					ID:             cat.ID,
+					CategoriesName: cat.CategoriesName,
+				})
+			}
+			postDTO := PostDTO{
+				ID:                post.ID,
+				Title:             post.Title,
+				Content:           post.Content,
+				Picture:           post.Picture,
+				RecommendAgeRange: post.RecommendAgeRange,
+				Status:            post.Status,
+				Categories:        categories,
+				User: UserDTO{
+					Username: post.User.Username,
+					Picture:  post.User.Picture,
+				},
+			}
+			postDTOs = append(postDTOs, postDTO)
+		}
+		return c.JSON(postDTOs)
+	}
+}
+
+// RequestPost model
+// (If you want to keep it separate from Post, otherwise you can use Post with a different type or flag)
+type RequestPost struct {
+	gorm.Model
+	Title             string                `gorm:"size:150;not null"`
+	Content           string                `gorm:"type:text;not null"`
+	Picture           string                `gorm:"size:255"`
+	RecommendAgeRange string                `gorm:"size:50;column:recommend_age_range"`
+	Status            string                `gorm:"size:20;default:'pending'"`
+	UserID            uint                  `gorm:"not null"`
+	User              User                  `gorm:"foreignKey:UserID;references:ID"`
+	Categories        []Category            `gorm:"many2many:request_post_categories;"`
+	Approvals         []RequestPostApproval `gorm:"many2many:request_post_approval;"`
+}
+
+type RequestPostApproval struct {
+	RequestPostID uint      `gorm:"primaryKey"`
+	UserID        uint      `gorm:"primaryKey"`
+	ApprovedAt    time.Time `gorm:"not null;default:current_timestamp"`
+
+	RequestPost RequestPost `gorm:"foreignKey:RequestPostID;references:ID"`
+	User        User        `gorm:"foreignKey:UserID;references:ID"`
+}
+
+type CreateRequestPostRequest struct {
+	Title             string `json:"title"`
+	Content           string `json:"content"`
+	RecommendAgeRange string `json:"RecommendAgeRange"`
+	Categories        []uint `json:"Categories"`
+}
+
+func CreateRequestPost(db *gorm.DB, c *fiber.Ctx) error {
+	userID := c.Locals("userID").(uint)
+
+	postData := new(CreateRequestPostRequest)
+	if err := json.Unmarshal([]byte(c.FormValue("post")), postData); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "Failed to parse post JSON: " + err.Error(),
+		})
+	}
+
+	file, err := c.FormFile("picture")
+	pictureFilename := ""
+	if err == nil && file != nil {
+		filePath := fmt.Sprintf("./uploads/%s", file.Filename)
+		if err := c.SaveFile(file, filePath); err == nil {
+			pictureFilename = file.Filename
+		}
+	}
+
+	var categories []Category
+	if len(postData.Categories) > 0 {
+		if err := db.Where("id IN ?", postData.Categories).Find(&categories).Error; err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Some categories not found: " + err.Error(),
+			})
+		}
+	}
+
+	requestPost := RequestPost{
+		Title:             postData.Title,
+		Content:           postData.Content,
+		Picture:           pictureFilename,
+		RecommendAgeRange: postData.RecommendAgeRange,
+		Status:            "pending",
+		UserID:            userID,
+		Categories:        categories,
+	}
+
+	if err := db.Create(&requestPost).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to create request post: " + err.Error(),
+		})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(requestPost)
+}
+
+// Approve a request post by an expert user
+func ApproveRequestPost(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userID := c.Locals("userID").(uint)
+		requestPostID := c.Params("id")
+
+		var requestPost RequestPost
+		if err := db.Preload("Categories").First(&requestPost, requestPostID).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Request post not found"})
+		}
+
+		var user User
+		if err := db.Preload("ExpertCategories").First(&user, userID).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "User not found"})
+		}
+
+		isExpert := false
+		for _, postCat := range requestPost.Categories {
+			for _, expertCat := range user.ExpertCategories {
+				if postCat.ID == expertCat.ID {
+					isExpert = true
+					break
+				}
+			}
+		}
+		if !isExpert {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "You are not an expert in this request post's category"})
+		}
+
+		var existingApproval RequestPostApproval
+		if err := db.Where("request_post_id = ? AND user_id = ?", requestPost.ID, userID).First(&existingApproval).Error; err == nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "You have already approved this request post"})
+		}
+
+		approval := RequestPostApproval{
+			RequestPostID: requestPost.ID,
+			UserID:        userID,
+			ApprovedAt:    time.Now(),
+		}
+		if err := db.Create(&approval).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to approve request post"})
+		}
+
+		var approvalCount int64
+		db.Model(&RequestPostApproval{}).Where("request_post_id = ?", requestPost.ID).Count(&approvalCount)
+
+		if approvalCount >= 3 && requestPost.Status != "approved" {
+			requestPost.Status = "approved"
+			if err := db.Save(&requestPost).Error; err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update request post status"})
+			}
+		}
+
+		return c.JSON(fiber.Map{"message": "Request post approved", "current_approvals": approvalCount, "status": requestPost.Status})
+	}
+}
