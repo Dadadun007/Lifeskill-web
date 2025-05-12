@@ -117,5 +117,7 @@ func main() {
 	app.Put("/approve_post/:id", authRequired, database.ApprovePost(database.DB))
 	app.Get("/approved_posts", database.GetApprovedPosts(database.DB))
 
+	app.Get("/request_post", authRequired, database.GetPendingPostsForExpert(database.DB))
+
 	app.Listen(":8080")
 }

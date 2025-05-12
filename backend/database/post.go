@@ -709,3 +709,62 @@ func ApproveRequestPost(db *gorm.DB) fiber.Handler {
 		return c.JSON(fiber.Map{"message": "Request post approved", "current_approvals": approvalCount, "status": requestPost.Status})
 	}
 }
+
+// Get all pending posts for expert user to approve
+func GetPendingPostsForExpert(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userID := c.Locals("userID").(uint)
+
+		// Get expert categories for this user
+		var user User
+		if err := db.Preload("ExpertCategories").First(&user, userID).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "User not found"})
+		}
+		var expertCategoryIDs []uint
+		for _, cat := range user.ExpertCategories {
+			expertCategoryIDs = append(expertCategoryIDs, cat.ID)
+		}
+		if len(expertCategoryIDs) == 0 {
+			return c.JSON([]PostDTO{}) // No expert categories, return empty
+		}
+
+		// Find posts with status 'pending' and at least one matching category
+		var posts []Post
+		err := db.Preload("User").Preload("Categories").
+			Joins("JOIN post_categories pc ON pc.post_id = posts.id").
+			Where("posts.status = ? AND pc.category_id IN ?", "pending", expertCategoryIDs).
+			Group("posts.id").
+			Order("posts.created_at desc").
+			Find(&posts).Error
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch pending posts"})
+		}
+
+		// Map to DTOs
+		var postDTOs []PostDTO
+		for _, post := range posts {
+			var categories []CategoryDTO
+			for _, cat := range post.Categories {
+				categories = append(categories, CategoryDTO{
+					ID:             cat.ID,
+					CategoriesName: cat.CategoriesName,
+				})
+			}
+			postDTO := PostDTO{
+				ID:                post.ID,
+				Title:             post.Title,
+				Content:           post.Content,
+				Picture:           post.Picture,
+				RecommendAgeRange: post.RecommendAgeRange,
+				Status:            post.Status,
+				Categories:        categories,
+				User: UserDTO{
+					Username: post.User.Username,
+					Picture:  post.User.Picture,
+				},
+			}
+			postDTOs = append(postDTOs, postDTO)
+		}
+		return c.JSON(postDTOs)
+	}
+}
