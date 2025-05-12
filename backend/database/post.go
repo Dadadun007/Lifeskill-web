@@ -417,3 +417,62 @@ func GetMyPosts(db *gorm.DB) fiber.Handler {
 		return c.JSON(postDTOs)
 	}
 }
+
+// Filter posts by category, age range, and most liked
+func FilterPosts(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		categoryID := c.Query("category_id")
+		recommendAgeRange := c.Query("recommend_age_range")
+		sort := c.Query("sort") // 'mostlike' or 'recent'
+
+		var posts []Post
+		query := db.Preload("User").Preload("Categories")
+
+		if categoryID != "" {
+			query = query.Joins("JOIN post_categories pc ON pc.post_id = posts.id").Where("pc.category_id = ?", categoryID)
+		}
+		if recommendAgeRange != "" {
+			query = query.Where("recommend_age_range = ?", recommendAgeRange)
+		}
+
+		if sort == "mostlike" {
+			query = query.Order("like DESC")
+		} else {
+			query = query.Order("created_at DESC")
+		}
+
+		if err := query.Find(&posts).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to filter posts",
+			})
+		}
+
+		// Map to DTOs
+		var postDTOs []PostDTO
+		for _, post := range posts {
+			var categories []CategoryDTO
+			for _, cat := range post.Categories {
+				categories = append(categories, CategoryDTO{
+					ID:             cat.ID,
+					CategoriesName: cat.CategoriesName,
+				})
+			}
+			postDTO := PostDTO{
+				ID:                post.ID,
+				Title:             post.Title,
+				Content:           post.Content,
+				Picture:           post.Picture,
+				RecommendAgeRange: post.RecommendAgeRange,
+				Status:            post.Status,
+				Categories:        categories,
+				User: UserDTO{
+					Username: post.User.Username,
+					Picture:  post.User.Picture,
+				},
+			}
+			postDTOs = append(postDTOs, postDTO)
+		}
+
+		return c.JSON(postDTOs)
+	}
+}

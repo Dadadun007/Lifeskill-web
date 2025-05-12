@@ -112,5 +112,7 @@ func main() {
 
 	app.Get("/comments/:post_id", database.GetCommentsByPostID(database.DB))
 
+	app.Get("/filter_posts", database.FilterPosts(database.DB))
+
 	app.Listen(":8080")
 }
