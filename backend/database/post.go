@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -826,5 +827,130 @@ func GetMyAchievements(db *gorm.DB) fiber.Handler {
 			})
 		}
 		return c.JSON(result)
+	}
+}
+
+// Get all posts that the current user has achieved (by category achievement)
+func GetMyAchievedPosts(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userID := c.Locals("userID").(uint)
+
+		// Get all category IDs where user has achievement
+		var achievements []TotalAchievement
+		if err := db.Where("user_id = ? AND score > 0", userID).Find(&achievements).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch achievements"})
+		}
+		var achievedCategoryIDs []uint
+		for _, a := range achievements {
+			achievedCategoryIDs = append(achievedCategoryIDs, a.CategoryID)
+		}
+		if len(achievedCategoryIDs) == 0 {
+			return c.JSON([]PostDTO{})
+		}
+
+		// Find posts that have at least one category in achievedCategoryIDs
+		var posts []Post
+		err := db.Preload("User").Preload("Categories").
+			Joins("JOIN post_categories pc ON pc.post_id = posts.id").
+			Where("pc.category_id IN ?", achievedCategoryIDs).
+			Group("posts.id").
+			Order("posts.created_at desc").
+			Find(&posts).Error
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch achieved posts"})
+		}
+
+		// Map to DTOs
+		var postDTOs []PostDTO
+		for _, post := range posts {
+			var categories []CategoryDTO
+			for _, cat := range post.Categories {
+				categories = append(categories, CategoryDTO{
+					ID:             cat.ID,
+					CategoriesName: cat.CategoriesName,
+				})
+			}
+			postDTO := PostDTO{
+				ID:                post.ID,
+				Title:             post.Title,
+				Content:           post.Content,
+				Picture:           post.Picture,
+				RecommendAgeRange: post.RecommendAgeRange,
+				Status:            post.Status,
+				Categories:        categories,
+				User: UserDTO{
+					Username: post.User.Username,
+					Picture:  post.User.Picture,
+				},
+			}
+			postDTOs = append(postDTOs, postDTO)
+		}
+		return c.JSON(postDTOs)
+	}
+}
+
+// Recommend posts by age range
+func RecommendPostsByAge(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		ageStr := c.Query("age")
+		var age int
+		var err error
+		if ageStr != "" {
+			age, err = strconv.Atoi(ageStr)
+			if err != nil {
+				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid age parameter"})
+			}
+		} else {
+			// If user is authenticated, use their age
+			userIDVal := c.Locals("userID")
+			if userIDVal != nil {
+				var user User
+				if err := db.First(&user, userIDVal.(uint)).Error; err == nil {
+					age = user.Age
+				}
+			}
+		}
+		if age == 0 {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Age is required as query or user profile"})
+		}
+
+		var posts []Post
+		if err := db.Preload("User").Preload("Categories").Find(&posts).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch posts"})
+		}
+
+		var recommended []PostDTO
+		for _, post := range posts {
+			// RecommendAgeRange format: "10-15"
+			parts := strings.Split(post.RecommendAgeRange, "-")
+			if len(parts) == 2 {
+				minAge, err1 := strconv.Atoi(strings.TrimSpace(parts[0]))
+				maxAge, err2 := strconv.Atoi(strings.TrimSpace(parts[1]))
+				if err1 == nil && err2 == nil && age >= minAge && age <= maxAge {
+					var categories []CategoryDTO
+					for _, cat := range post.Categories {
+						categories = append(categories, CategoryDTO{
+							ID:             cat.ID,
+							CategoriesName: cat.CategoriesName,
+						})
+					}
+					postDTO := PostDTO{
+						ID:                post.ID,
+						Title:             post.Title,
+						Content:           post.Content,
+						Picture:           post.Picture,
+						RecommendAgeRange: post.RecommendAgeRange,
+						Status:            post.Status,
+						Categories:        categories,
+						User: UserDTO{
+							Username: post.User.Username,
+							Picture:  post.User.Picture,
+						},
+					}
+					recommended = append(recommended, postDTO)
+				}
+			}
+		}
+		return c.JSON(recommended)
 	}
 }

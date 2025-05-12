@@ -123,5 +123,9 @@ func main() {
 
 	app.Get("/my_achievements", authRequired, database.GetMyAchievements(database.DB))
 
+	app.Get("/my_achieved_posts", authRequired, database.GetMyAchievedPosts(database.DB))
+
+	app.Get("/recommend_posts_by_age", database.RecommendPostsByAge(database.DB))
+
 	app.Listen(":8080")
 }
