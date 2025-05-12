@@ -1,17 +1,20 @@
 package main
 
 import (
-	"github.com/gofiber/fiber/v2"
-	"github.com/dadadun/lifskill/database"
 	"fmt"
+	"strconv"
+
+	"github.com/dadadun/lifskill/database"
+	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/golang-jwt/jwt/v4"
-	"strconv"
 )
 
 func authRequired(c *fiber.Ctx) error {
 	cookie := c.Cookies("jwt")
+	fmt.Println("JWT cookie received in middleware:", cookie)
 	if cookie == "" {
+		fmt.Println("No JWT cookie found!")
 		return c.SendStatus(fiber.StatusUnauthorized)
 	}
 
@@ -41,14 +44,13 @@ func authRequired(c *fiber.Ctx) error {
 	return c.Next()
 }
 
-
 func main() {
 	app := fiber.New()
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: "http://localhost:5173",
+		AllowOrigins:     "http://localhost:5173",
 		AllowCredentials: true,
 	}))
-	
+
 	fmt.Println("Starting application...")
 
 	database.LoadConfig()
@@ -58,12 +60,12 @@ func main() {
 	app.Static("/", "../frontend/lifskill_frontend/dist")
 
 	fmt.Println("Application started successfully!")
-  
+
 	// Define routes
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendFile("../frontend/lifskill_frontend/dist/index.html")
 	})
-  
+
 	// about authentication
 	app.Post("/register", func(c *fiber.Ctx) error {
 		return database.CreateUser(database.DB, c)
@@ -74,7 +76,7 @@ func main() {
 	})
 
 	// รอใส่ route ที่ต้อง login ก่อน
-	app.Use("/category", "/user", "/posts/:id/like", "/my-posts", "/comments", authRequired)
+	app.Use("/category", "/user", authRequired)
 
 	// add category
 	app.Post("/category", func(c *fiber.Ctx) error {
@@ -82,23 +84,23 @@ func main() {
 	})
 
 	// สร้างโพสต์
-	app.Post("/post", func(c *fiber.Ctx) error {
+	app.Post("/create_post", authRequired, func(c *fiber.Ctx) error {
 		return database.CreatePost(database.DB, c)
 	})
 
-	app.Get("/post", database.GetAllPosts(database.DB))
+	app.Get("/get_all_post", database.GetAllPosts(database.DB))
 
-	app.Get("/post/:id", database.GetPostByID(database.DB))
+	app.Get("/get_post_by_id/:id", database.GetPostByID(database.DB))
 
-	app.Delete("/posts/:id", database.DeletePost(database.DB))
+	app.Delete("/delete_posts/:id", database.DeletePost(database.DB))
 
-	app.Get("/posts/search", database.SearchPosts(database.DB))
+	app.Get("/search_post", database.SearchPosts(database.DB))
 
-	app.Put("/posts/:id/like", database.LikePost(database.DB))
+	app.Put("/like_post/:id", authRequired, database.LikePost(database.DB))
 
-	app.Get("/my-posts", database.GetMyPosts(database.DB))
+	app.Get("/my-posts", authRequired, database.GetMyPosts(database.DB))
 
-	app.Post("/comments", database.CreateComment(database.DB))
+	app.Post("/create_comments", authRequired, database.CreateComment(database.DB))
 
 	app.Put("/user", func(c *fiber.Ctx) error {
 		return database.UpdateUser(database.DB, c)
@@ -107,6 +109,8 @@ func main() {
 	app.Put("/user/change-password", func(c *fiber.Ctx) error {
 		return database.ChangePassword(database.DB, c)
 	})
+
+	app.Get("/comments/:post_id", database.GetCommentsByPostID(database.DB))
 
 	app.Listen(":8080")
 }

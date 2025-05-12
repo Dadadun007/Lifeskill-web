@@ -1,17 +1,16 @@
 package database
 
 import (
-	"gorm.io/gorm"
 	"github.com/gofiber/fiber/v2"
-
+	"gorm.io/gorm"
 )
 
 type Comment struct {
 	gorm.Model
-	CommentContent string    `gorm:"type:text;not null;column:comment_content"`
-	UserID         uint      `gorm:"not null"`
-	PostID         uint      `gorm:"not null"`
-	ParentID       *uint     `gorm:"default:null"` // For reply functionality
+	CommentContent string `gorm:"type:text;not null;column:comment_content"`
+	UserID         uint   `gorm:"not null"`
+	PostID         uint   `gorm:"not null"`
+	ParentID       *uint  `gorm:"default:null"` // For reply functionality
 
 }
 
@@ -65,5 +64,19 @@ func CreateComment(db *gorm.DB) fiber.Handler {
 		}
 
 		return c.Status(fiber.StatusCreated).JSON(comment)
+	}
+}
+
+// Get all comments for a post (public route)
+func GetCommentsByPostID(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		postID := c.Params("post_id")
+		var comments []Comment
+		if err := db.Where("post_id = ?", postID).Order("created_at asc").Find(&comments).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to fetch comments",
+			})
+		}
+		return c.JSON(comments)
 	}
 }

@@ -3,8 +3,9 @@ package database
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
-    "strconv"
+
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
 )
@@ -44,6 +45,7 @@ type CreatePostRequest struct {
 }
 
 func CreatePost(db *gorm.DB, c *fiber.Ctx) error {
+	fmt.Println("userID in Locals:", c.Locals("userID"))
 	userID := c.Locals("userID").(uint)
 
 	// 1. Parse the `post` field (JSON inside FormData)
@@ -109,14 +111,14 @@ func CreatePost(db *gorm.DB, c *fiber.Ctx) error {
 }
 
 type PostDTO struct {
-	ID                uint            `json:"id"`
-	Title             string          `json:"title"`
-	Content           string          `json:"content"`
-	Picture           string          `json:"picture"`
-	RecommendAgeRange string          `json:"recommend_age_range"`
-	Status            string          `json:"status"`
-	Categories        []CategoryDTO   `json:"categories"`
-	User              UserDTO         `json:"user"`
+	ID                uint          `json:"id"`
+	Title             string        `json:"title"`
+	Content           string        `json:"content"`
+	Picture           string        `json:"picture"`
+	RecommendAgeRange string        `json:"recommend_age_range"`
+	Status            string        `json:"status"`
+	Categories        []CategoryDTO `json:"categories"`
+	User              UserDTO       `json:"user"`
 }
 
 type CategoryDTO struct {
