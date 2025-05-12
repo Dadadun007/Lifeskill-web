@@ -768,3 +768,63 @@ func GetPendingPostsForExpert(db *gorm.DB) fiber.Handler {
 		return c.JSON(postDTOs)
 	}
 }
+
+// Achieve a post: increment user's TotalAchievement score for each category of the post
+func AchievePost(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userID := c.Locals("userID").(uint)
+		postID := c.Params("id")
+
+		// Find the post and its categories
+		var post Post
+		if err := db.Preload("Categories").First(&post, postID).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Post not found"})
+		}
+
+		for _, cat := range post.Categories {
+			var achievement TotalAchievement
+			err := db.Where("user_id = ? AND category_id = ?", userID, cat.ID).First(&achievement).Error
+			if err != nil {
+				// Not found, create new
+				achievement = TotalAchievement{
+					UserID:     userID,
+					CategoryID: cat.ID,
+					Score:      1,
+				}
+				db.Create(&achievement)
+			} else {
+				// Found, increment score
+				achievement.Score++
+				db.Save(&achievement)
+			}
+		}
+
+		return c.JSON(fiber.Map{"message": "Achievement updated for post categories"})
+	}
+}
+
+// Get current user's achievement scores for each category
+func GetMyAchievements(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userID := c.Locals("userID").(uint)
+		var achievements []TotalAchievement
+		if err := db.Preload("Category").Where("user_id = ?", userID).Find(&achievements).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch achievements"})
+		}
+
+		type AchievementDTO struct {
+			CategoryID   uint   `json:"category_id"`
+			CategoryName string `json:"category_name"`
+			Score        int    `json:"score"`
+		}
+		var result []AchievementDTO
+		for _, a := range achievements {
+			result = append(result, AchievementDTO{
+				CategoryID:   a.CategoryID,
+				CategoryName: a.Category.CategoriesName,
+				Score:        a.Score,
+			})
+		}
+		return c.JSON(result)
+	}
+}

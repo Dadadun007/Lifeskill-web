@@ -119,5 +119,9 @@ func main() {
 
 	app.Get("/request_post", authRequired, database.GetPendingPostsForExpert(database.DB))
 
+	app.Post("/achieve_post/:id", authRequired, database.AchievePost(database.DB))
+
+	app.Get("/my_achievements", authRequired, database.GetMyAchievements(database.DB))
+
 	app.Listen(":8080")
 }
