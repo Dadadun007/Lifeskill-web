@@ -77,6 +77,8 @@ func main() {
 		return database.LoginUser(database.DB, c)
 	})
 
+	app.Post("/auth/logout", database.LogoutUser)
+
 	// รอใส่ route ที่ต้อง login ก่อน
 	app.Use("/category", authRequired)
 

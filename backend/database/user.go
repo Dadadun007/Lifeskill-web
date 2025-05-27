@@ -269,3 +269,17 @@ func GetCurrentUser(db *gorm.DB, c *fiber.Ctx) error {
 
 	return c.JSON(user)
 }
+
+func LogoutUser(c *fiber.Ctx) error {
+	// Clear the JWT cookie by setting an expired cookie with the same name
+	c.Cookie(&fiber.Cookie{
+		Name:     "jwt",
+		Value:    "",
+		Expires:  time.Now().Add(-1 * time.Hour), // Set expiration to the past
+		HTTPOnly: true,
+	})
+
+	return c.JSON(fiber.Map{
+		"message": "Successfully logged out",
+	})
+}
