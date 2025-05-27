@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ChevronDown, Bookmark, Heart, MessageCircle, User, Search, Bell, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Header from './Header';
+import Footer from './Footer';
 
 function Mypage() {
   const [posts, setPosts] = useState([]);
@@ -122,6 +123,7 @@ function Mypage() {
           ))}
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

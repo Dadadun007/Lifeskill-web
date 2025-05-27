@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Header from './Header';
+import Footer from "./Footer";
 import {
   ChevronDown,
   Bookmark,
@@ -11,6 +12,7 @@ import {
 function Home() {
   const [posts, setPosts] = useState([]);
   const [user, setUser] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch('http://localhost:8080/user/me', {
@@ -32,6 +34,12 @@ function Home() {
       .then((data) => setPosts(data))
       .catch(() => setPosts([]));
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      navigate('/mypage');
+    }
+  }, [user, navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
@@ -167,6 +175,7 @@ function Home() {
           </button>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }
