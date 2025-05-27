@@ -43,7 +43,7 @@ function Login() {
   };
 
   return (
-    <div className="flex flex-col justify-center items-center h-screen bg-[#373737]">
+    <div className="flex flex-col justify-center items-center h-screen bg-[#43A895]">
       <form
         onSubmit={handleSubmit}
         className="flex flex-col gap-y-3 bg-white shadow-xl rounded-2xl p-6 w-screen max-w-xl"

@@ -1,99 +1,114 @@
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import Header from './Header';
+import { ChevronDown, Bookmark, Heart, MessageCircle } from 'lucide-react';
 
 function Home() {
-  const posts = [
-    {
-      id: 'post1',
-      username: 'Username',
-      topic: 'Topic',
-      detail: 'detail',
-      image: 'test.png',
-      link: '/posts/1',
-    },
-    {
-      id: 'post2',
-      username: 'Username',
-      topic: 'Topic',
-      detail: 'detail',
-      image: 'test.png',
-      link: '/posts/2',
-    },
-  ];
+  const [posts, setPosts] = useState([]);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    // ดึง user
+    fetch('http://localhost:8080/user/me', {
+      method: 'GET',
+      credentials: 'include',
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Unauthorized");
+        return res.json();
+      })
+      .then((data) => {
+        setUser(data);
+      })
+      .catch(() => {
+        setUser(null); // ถ้าไม่ได้ login
+      });
+
+    // ดึงโพสต์ทั้งหมด
+    fetch('http://localhost:8080/get_all_post', {
+      method: 'GET',
+      credentials: 'include',
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setPosts(data);
+      })
+      .catch((err) => {
+        console.error('Error fetching posts:', err);
+        setPosts([]); // ป้องกัน posts เป็น null
+      });
+  }, []);
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#2f2f2f] text-white font-sans w-full overflow-x-hidden">
-      {/* Navbar */}
-      <nav className="w-full bg-[#1b4c3f] px-4 py-3 flex flex-col md:flex-row items-center justify-between gap-3">
-        <div className="flex items-center">
-          <img src="LifeSkill.png" alt="LifeSkill Icon" className="w-[140px] h-[50px]" />
-        </div>
+    <div className="flex flex-col min-h-screen bg-[#EDEDED] text-white font-sans w-full overflow-x-hidden">
+      <Header />
 
-        {/* Search Bar */}
-        <div className="flex items-center w-full md:max-w-[600px] px-3 py-1">
-          <input
-            type="text"
-            placeholder="Search..."
-            className="flex-1 text-sm text-black rounded-full px-2 py-2 bg-white "
-          />
-          <button className="flex items-center justify-center ml-2 bg-[#5A7FB3] h-[40px] w-[60px] rounded-full">
-            <img src="Search.png" alt="Search Icon" className="w-[20px] h-[20px] object-contain" />
-          </button>
-        </div>
-
-        {/* Login Button */}
-        <Link to="/login">
-          <button className="bg-[#1b8df2] text-white px-4 py-1.5 rounded-lg text-sm whitespace-nowrap">
-            Login / Sign up
-          </button>
-        </Link>
-      </nav>
-
-      {/* Main Content */}
       <main className="flex-1 px-4 py-8 w-full max-w-[1400px] mx-auto">
-
-        {/* Recommend */}
-        <section className="mb-10">
-          <h2 className="text-xl font-semibold mb-5 text-left">Recommend</h2>
-          <div className="relative">
-            <div className="flex overflow-x-auto gap-4 px-1">
-              {posts.map((post) => (
-                <Link key={post.id} to={post.link}>
-                  <img
-                    src={post.image}
-                    alt={`img${post.id}`}
-                    className="w-[250px] h-[140px] rounded-xl object-cover flex-shrink-0"
-                  />
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
+     
+      <header className=" py-3 flex flex-col items-center gap-4 border-b border-gray-200">
+        <img
+          src="lifeskill2.png"
+          alt="LifeSkill Logo"
+          className="w-[500px] h-[70px] object-contain"
+        />
+        <p className="max-w-2xl text-center text-black px-4 text-sm md:text-base">
+          LifeSkill พื้นที่แบ่งปันและแลกเปลี่ยน ทักษะการใช้ชีวิตขั้นพื้นฐาน สำหรับบุคคลทั่วไป ผ่านรูปแบบกระทู้ เพื่อให้ทุกคนเรียนรู้จากประสบการณ์จริง และช่วยกันเติมเต็มสิ่งที่ไม่มีใครเคยสอน
+        </p>
+      </header>
+        {/* เพิ่มปุ่มสร้างโพสต์ถ้า login แล้ว */}
 
         {/* Filter */}
-        <div className="flex justify-between flex-wrap items-center gap-4 text-sm mb-6 px-1">
-          <span className="cursor-pointer">Most like ▼</span>
-          <span className="cursor-pointer">Categories ▼</span>
+        <div className="flex justify-start items-center gap-4 text-sm mb-6 px-1 text-black">
+          <div className="flex items-center gap-1 cursor-pointer text-gray-500 hover:text-gray-700">
+            <span>Most like</span>
+            <ChevronDown className="w-4 h-4" />
+          </div>
+          <div className="flex items-center gap-1 cursor-pointer text-gray-500 hover:text-gray-700">
+            <span>Categories</span>
+            <ChevronDown className="w-4 h-4" />
+          </div>
         </div>
 
         {/* Posts */}
-        <div className="flex flex-col gap-6">
-          {posts.map((post) => (
-            <Link key={post.id} to={post.link} className="block">
-              <div className="bg-[#444] p-5 rounded-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shadow-md">
-                <div className="flex flex-col gap-1 text-sm flex-1 text-left">
-                  <div>👤 {post.username}</div>
-                  <div>{post.topic}</div>
-                  <div>{post.detail}</div>
-                  <div className="flex gap-3 text-xs pt-1">
-                    <span>👁️ 12</span>
-                    <span>💬 5</span>
-                    <span>❤️ 35</span>
+        <div className="flex flex-col gap-4">
+          {Array.isArray(posts) && posts.map((post) => (
+            <Link key={post.id} to={`/posts/${post.id}`} className="block">
+              <div className="bg-white p-6 rounded-2xl flex flex-col md:flex-row justify-between items-start gap-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                <div className="flex flex-col gap-3 flex-1">
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={post.avatar || "/placeholder.svg"}
+                      alt={post.username || "user"}
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                    <span className="text-gray-700 font-medium">{post.username}</span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-semibold text-gray-900">{post.topic}</h3>
+                    <p className="text-gray-600">{post.detail}</p>
+                  </div>
+
+                  <div className="flex items-center gap-4 text-sm text-gray-500">
+                    <div className="flex items-center gap-1">
+                      <Heart className="w-4 h-4" />
+                      <span>{post.likes || 0}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <MessageCircle className="w-4 h-4" />
+                      <span>{post.comments_count || 0}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Bookmark className="w-4 h-4" />
+                      <span>{post.achievement || 0}</span>
+                    </div>
                   </div>
                 </div>
+
                 <img
-                  src={post.image}
-                  alt="post"
-                  className="w-full md:w-[240px] h-[120px] object-cover rounded-lg"
+                  src={post.image || "/placeholder.svg"}
+                  alt="Post image"
+                  className="w-full md:w-[240px] h-[120px] object-cover rounded-xl"
                 />
               </div>
             </Link>
@@ -104,4 +119,4 @@ function Home() {
   );
 }
 
-export default Home
+export default Home;
