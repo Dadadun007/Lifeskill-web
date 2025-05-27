@@ -78,7 +78,7 @@ func main() {
 	})
 
 	// รอใส่ route ที่ต้อง login ก่อน
-	app.Use("/category", "/user", authRequired)
+	app.Use("/category", authRequired)
 
 	// add category
 	app.Post("/category", func(c *fiber.Ctx) error {
@@ -104,11 +104,11 @@ func main() {
 
 	app.Post("/create_comments", authRequired, database.CreateComment(database.DB))
 
-	app.Put("/user", func(c *fiber.Ctx) error {
+	app.Put("/user/update", authRequired, func(c *fiber.Ctx) error {
 		return database.UpdateUser(database.DB, c)
 	})
 
-	app.Put("/user/change-password", func(c *fiber.Ctx) error {
+	app.Put("/user/change-password", authRequired, func(c *fiber.Ctx) error {
 		return database.ChangePassword(database.DB, c)
 	})
 
