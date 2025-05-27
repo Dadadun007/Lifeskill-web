@@ -49,8 +49,8 @@ func main() {
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     "http://localhost:5173",
 		AllowCredentials: true,
-		AllowHeaders: "Origin, Content-Type, Accept",
-        AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
+		AllowHeaders:     "Origin, Content-Type, Accept",
+		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
 	}))
 
 	fmt.Println("Starting application...")
@@ -110,6 +110,10 @@ func main() {
 
 	app.Put("/user/change-password", func(c *fiber.Ctx) error {
 		return database.ChangePassword(database.DB, c)
+	})
+
+	app.Get("/user/me", authRequired, func(c *fiber.Ctx) error {
+		return database.GetCurrentUser(database.DB, c)
 	})
 
 	app.Get("/comments/:post_id", database.GetCommentsByPostID(database.DB))

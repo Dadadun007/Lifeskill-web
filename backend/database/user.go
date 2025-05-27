@@ -1,45 +1,45 @@
 package database
 
 import (
-	"gorm.io/gorm"
+	"fmt"
 	"os"
-	"golang.org/x/crypto/bcrypt"
+	"strconv"
+	"time"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
-	"time"
-	"strconv"
-	"fmt"
-	
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 type User struct {
 	gorm.Model
-    Username string `gorm:"size:50;not null;unique" json:"username"`
-    Password string `gorm:"size:255;not null" json:"password"`
-    Email    string `gorm:"size:100;not null;unique" json:"email"`
-    Age      int    `json:"age"`
-    Sex      string `gorm:"size:10" json:"sex"`
-	Picture  string `gorm:"size:255" json:"picture"`
-	Posts    			[]Post 				`gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
-	ExpertCategories 	[]Category 			`gorm:"many2many:user_expert_categories;"`
-	TotalAchievement 	[]TotalAchievement 	`gorm:"many2many:Total_Achievement"`
-	PostApproval      	[]PostApproval 		`gorm:"many2many:post_approval;"`
-	Comments         	[]Comment         	`gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	Username         string             `gorm:"size:50;not null;unique" json:"username"`
+	Password         string             `gorm:"size:255;not null" json:"password"`
+	Email            string             `gorm:"size:100;not null;unique" json:"email"`
+	Age              int                `json:"age"`
+	Sex              string             `gorm:"size:10" json:"sex"`
+	Picture          string             `gorm:"size:255" json:"picture"`
+	Posts            []Post             `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	ExpertCategories []Category         `gorm:"many2many:user_expert_categories;"`
+	TotalAchievement []TotalAchievement `gorm:"many2many:Total_Achievement"`
+	PostApproval     []PostApproval     `gorm:"many2many:post_approval;"`
+	Comments         []Comment          `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 }
 
 func CreateUser(db *gorm.DB, c *fiber.Ctx) error {
 	user := new(User)
 	if err := c.BodyParser(user); err != nil {
-	  return err
+		return err
 	}
-  
+
 	// Encrypt the password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-	  return err
+		return err
 	}
 	user.Password = string(hashedPassword)
-  
+
 	// Create user
 	db.Create(user)
 	return c.JSON(user)
@@ -102,11 +102,11 @@ func UpdateUser(db *gorm.DB, c *fiber.Ctx) error {
 
 	// Parse the incoming data
 	var input struct {
-		Username          string   `form:"username"`
-		Email             string   `form:"email"`
-		Age               int      `form:"age"`
-		Gender            string   `form:"gender"`
-		ExpertCategoryIDs []uint   `form:"expertCategoryIDs"`
+		Username          string `form:"username"`
+		Email             string `form:"email"`
+		Age               int    `form:"age"`
+		Gender            string `form:"gender"`
+		ExpertCategoryIDs []uint `form:"expertCategoryIDs"`
 	}
 
 	if err := c.BodyParser(&input); err != nil {
@@ -252,3 +252,20 @@ func ChangePassword(db *gorm.DB, c *fiber.Ctx) error {
 	})
 }
 
+func GetCurrentUser(db *gorm.DB, c *fiber.Ctx) error {
+	// Get userID from context (set by auth middleware)
+	userID := c.Locals("userID").(uint)
+
+	// Find user by ID
+	var user User
+	if err := db.Preload("ExpertCategories").First(&user, userID).Error; err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "User not found",
+		})
+	}
+
+	// Remove sensitive information
+	user.Password = ""
+
+	return c.JSON(user)
+}
