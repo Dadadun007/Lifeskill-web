@@ -1,12 +1,14 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState, useRef } from 'react';
 import { ChevronDown } from 'lucide-react';
+import Createpost from './Createpost';
 
 function Header() {
   const [user, setUser] = useState(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -88,11 +90,12 @@ function Header() {
               <img src="tutorial.png" alt="Tutorial Icon" className="w-5 h-5" /> Tutorial
             </button>
           </Link>
-          <Link to="/create-post">
-            <button className="bg-[#6E9DE0] text-white font-semibold px-4 py-2 rounded-full text-sm hover:bg-[#4772AD] transition">
-              + Create Post
-            </button>
-          </Link>
+          
+          {/* ปุ่ม Create Post */}
+          <button className="bg-[#6E9DE0] text-white font-semibold px-4 py-2 rounded-full text-sm hover:bg-[#4772AD] transition" onClick={() => setIsCreateModalOpen(true)}>
+            + Create Post
+          </button>
+         
 
           {/* User Info Dropdown */}
           <div className="relative w-fit" ref={dropdownRef}>
@@ -168,6 +171,11 @@ function Header() {
             Login / Sign up
           </button>
         </Link>
+      )}
+
+      {/* Modal Popup */}
+      {isCreateModalOpen && (
+        <Createpost onClose={() => setIsCreateModalOpen(false)} />
       )}
     </nav>
   );

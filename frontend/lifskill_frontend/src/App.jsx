@@ -7,6 +7,8 @@ import Postrequest from './pages/Postrequest.jsx'
 import Tutorial from './pages/Tutorial.jsx'
 import Contactus from './pages/Contactus.jsx'
 import Mypage from './pages/Mypage.jsx'
+import Createpost from './pages/Createpost.jsx'
+
 
 function App() {
   return (
