@@ -83,6 +83,8 @@ func LoginUser(db *gorm.DB, c *fiber.Ctx) error {
 		Value:    t,
 		Expires:  time.Now().Add(72 * time.Hour),
 		HTTPOnly: true,
+		SameSite: "Lax",
+		Secure:   true,
 	})
 
 	return c.JSON(fiber.Map{"message": "success"})
@@ -277,6 +279,8 @@ func LogoutUser(c *fiber.Ctx) error {
 		Value:    "",
 		Expires:  time.Now().Add(-1 * time.Hour), // Set expiration to the past
 		HTTPOnly: true,
+		SameSite: "Lax",
+		Secure:   false,
 	})
 
 	return c.JSON(fiber.Map{

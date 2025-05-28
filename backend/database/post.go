@@ -434,8 +434,20 @@ func FilterPosts(db *gorm.DB) fiber.Handler {
 		var posts []Post
 		query := db.Preload("User").Preload("Categories")
 
+		fmt.Println("FilterPosts - Received category_id:", categoryID)
+
 		if categoryID != "" {
-			query = query.Joins("JOIN post_categories pc ON pc.post_id = posts.id").Where("pc.category_id = ?", categoryID)
+			// Attempt to convert categoryID to an integer to ensure it's a valid ID
+			_, err := strconv.Atoi(categoryID)
+			if err != nil {
+				// Log invalid categoryID and return an error or skip filtering
+				fmt.Println("FilterPosts - Invalid category_id received:", categoryID, "Error:", err)
+				// Optionally, return an error to the frontend:
+				// return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid category ID format"})
+				// For now, we'll just skip the category filter for invalid IDs
+			} else {
+				query = query.Joins("JOIN post_categories pc ON pc.post_id = posts.id").Where("pc.category_id = ?", categoryID)
+			}
 		}
 		if recommendAgeRange != "" {
 			query = query.Where("recommend_age_range = ?", recommendAgeRange)

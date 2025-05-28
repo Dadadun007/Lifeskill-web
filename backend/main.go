@@ -15,37 +15,62 @@ func authRequired(c *fiber.Ctx) error {
 	fmt.Println("JWT cookie received in middleware:", cookie)
 	if cookie == "" {
 		fmt.Println("No JWT cookie found!")
-		return c.SendStatus(fiber.StatusUnauthorized)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Missing JWT cookie",
+		})
 	}
 
-	// Parse JWT token
+	// Print the secret key length for debugging
+	fmt.Printf("JWT Secret Key length in middleware: %d bytes\n", len(database.JwtSecretKey))
+
 	token, err := jwt.ParseWithClaims(cookie, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
+		// Print the signing method for debugging
+		fmt.Printf("Token signing method: %v\n", token.Method)
 		return database.JwtSecretKey, nil
 	})
 
-	if err != nil || !token.Valid {
-		return c.SendStatus(fiber.StatusUnauthorized)
+	if err != nil {
+		fmt.Printf("JWT parse error: %v\n", err)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Invalid token: " + err.Error(),
+		})
 	}
 
-	// Extract user ID from claims
+	if !token.Valid {
+		fmt.Println("JWT token is not valid!")
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Token is not valid",
+		})
+	}
+
 	claims, ok := token.Claims.(*jwt.StandardClaims)
 	if !ok {
-		return c.SendStatus(fiber.StatusUnauthorized)
+		fmt.Println("JWT claims type assert failed")
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Invalid token claims",
+		})
 	}
+
+	fmt.Println("JWT claims subject (userID):", claims.Subject)
 
 	userID, err := strconv.ParseUint(claims.Subject, 10, 64)
 	if err != nil {
-		return c.SendStatus(fiber.StatusUnauthorized)
+		fmt.Println("Failed to parse userID from claims:", err)
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Invalid userID in token",
+		})
 	}
 
-	// Save userID ลง Context
 	c.Locals("userID", uint(userID))
-
+	fmt.Println("userID saved in Locals:", userID)
 	return c.Next()
 }
 
 func main() {
 	app := fiber.New()
+	database.LoadConfig()
+	database.ConnectDatabase()
+
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     "http://localhost:5173",
 		AllowCredentials: true,
@@ -55,85 +80,66 @@ func main() {
 
 	fmt.Println("Starting application...")
 
-	database.LoadConfig()
-	database.ConnectDatabase()
-
-	// load frontend files
 	app.Static("/", "../frontend/lifskill_frontend/dist")
+
+	// Serve uploaded images
+	app.Static("/uploads", "./uploads")
 
 	fmt.Println("Application started successfully!")
 
-	// Define routes
 	app.Get("/", func(c *fiber.Ctx) error {
 		return c.SendFile("../frontend/lifskill_frontend/dist/index.html")
 	})
 
-	// about authentication
+	// Public routes
 	app.Post("/register", func(c *fiber.Ctx) error {
 		return database.CreateUser(database.DB, c)
 	})
-
 	app.Post("/login", func(c *fiber.Ctx) error {
 		return database.LoginUser(database.DB, c)
 	})
-
 	app.Post("/auth/logout", database.LogoutUser)
 
-	// รอใส่ route ที่ต้อง login ก่อน
-	app.Use("/category", authRequired)
+	app.Get("/get_all_post", database.GetAllPosts(database.DB))
+	app.Get("/get_post_by_id/:id", database.GetPostByID(database.DB))
+	app.Delete("/delete_posts/:id", database.DeletePost(database.DB))
+	app.Get("/search_post", database.SearchPosts(database.DB))
+	app.Get("/comments/:post_id", database.GetCommentsByPostID(database.DB))
+	app.Get("/filter_posts", database.FilterPosts(database.DB))
+	app.Get("/approved_posts", database.GetApprovedPosts(database.DB))
+	app.Get("/recommend_posts_by_age", database.RecommendPostsByAge(database.DB))
 
-	// add category
-	app.Post("/category", func(c *fiber.Ctx) error {
+	// New public route to get all categories
+	app.Get("/categories", database.GetAllCategories(database.DB))
+
+	// Auth-protected group
+	auth := app.Group("/", authRequired)
+
+	auth.Post("/category", func(c *fiber.Ctx) error {
 		return database.CreateCategory(database.DB, c)
 	})
 
-	// สร้างโพสต์
-	app.Post("/create_post", authRequired, func(c *fiber.Ctx) error {
+	auth.Post("/create_post", func(c *fiber.Ctx) error {
 		return database.CreatePost(database.DB, c)
 	})
 
-	app.Get("/get_all_post", database.GetAllPosts(database.DB))
-
-	app.Get("/get_post_by_id/:id", database.GetPostByID(database.DB))
-
-	app.Delete("/delete_posts/:id", database.DeletePost(database.DB))
-
-	app.Get("/search_post", database.SearchPosts(database.DB))
-
-	app.Put("/like_post/:id", authRequired, database.LikePost(database.DB))
-
-	app.Get("/my-posts", authRequired, database.GetMyPosts(database.DB))
-
-	app.Post("/create_comments", authRequired, database.CreateComment(database.DB))
-
-	app.Put("/user/update", authRequired, func(c *fiber.Ctx) error {
+	auth.Put("/like_post/:id", database.LikePost(database.DB))
+	auth.Get("/my-posts", database.GetMyPosts(database.DB))
+	auth.Post("/create_comments", database.CreateComment(database.DB))
+	auth.Put("/user/update", func(c *fiber.Ctx) error {
 		return database.UpdateUser(database.DB, c)
 	})
-
-	app.Put("/user/change-password", authRequired, func(c *fiber.Ctx) error {
+	auth.Put("/user/change-password", func(c *fiber.Ctx) error {
 		return database.ChangePassword(database.DB, c)
 	})
-
-	app.Get("/user/me", authRequired, func(c *fiber.Ctx) error {
+	auth.Get("/user/me", func(c *fiber.Ctx) error {
 		return database.GetCurrentUser(database.DB, c)
 	})
-
-	app.Get("/comments/:post_id", database.GetCommentsByPostID(database.DB))
-
-	app.Get("/filter_posts", database.FilterPosts(database.DB))
-
-	app.Put("/approve_post/:id", authRequired, database.ApprovePost(database.DB))
-	app.Get("/approved_posts", database.GetApprovedPosts(database.DB))
-
-	app.Get("/request_post", authRequired, database.GetPendingPostsForExpert(database.DB))
-
-	app.Post("/achieve_post/:id", authRequired, database.AchievePost(database.DB))
-
-	app.Get("/my_achievements", authRequired, database.GetMyAchievements(database.DB))
-
-	app.Get("/my_achieved_posts", authRequired, database.GetMyAchievedPosts(database.DB))
-
-	app.Get("/recommend_posts_by_age", database.RecommendPostsByAge(database.DB))
+	auth.Put("/approve_post/:id", database.ApprovePost(database.DB))
+	auth.Get("/request_post", database.GetPendingPostsForExpert(database.DB))
+	auth.Post("/achieve_post/:id", database.AchievePost(database.DB))
+	auth.Get("/my_achievements", database.GetMyAchievements(database.DB))
+	auth.Get("/my_achieved_posts", database.GetMyAchievedPosts(database.DB))
 
 	app.Listen(":8080")
 }
