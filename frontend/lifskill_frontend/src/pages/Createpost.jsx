@@ -31,7 +31,7 @@ function Createpost({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-gray bg-opacity-10 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-3xl p-10 w-full max-w-2xl relative shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -88,46 +88,49 @@ function Createpost({ isOpen, onClose }) {
           </div>
         </div>
 
-        {/* Bottom Section */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            {/* Import Files */}
-            <button className="bg-gray-300 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-400 transition flex items-center gap-1">
-              Import files
-            </button>
-            
-            {/* Age Recommend */}
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600 text-sm">Age Recommend</span>
-              <input
-                type="text"
-                value={ageRecommend}
-                onChange={(e) => setAgeRecommend(e.target.value)}
-                className="w-12 px-2 py-1 bg-gray-100 rounded text-center text-xs border-none outline-none"
-              />
+      {/* Bottom Section */}
+          <div className="mb-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {/* Import Files */}
+                <button className="bg-gray-300 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-400 transition flex items-center gap-1">
+                  Import files
+                </button>
+                {/* Age Recommend */}
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-600 text-sm">Age Recommend</span>
+                  <select
+                    value={ageRecommend}
+                    onChange={(e) => setAgeRecommend(e.target.value)}
+                    className="w-24 px-2 py-1 bg-gray-100 rounded text-center text-xs border-none outline-none"
+                  >
+                    <option value="0-5">0-5</option>
+                    <option value="6-10">6-10</option>
+                    <option value="11-15">11-15</option>
+                    <option value="16-19">16-19</option>
+                    <option value="20+">20+</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                {/* Tutorial Button */}
+                <button className="bg-[#E2C576] text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-[#C5A241] transition flex items-center gap-1">
+                  💡 Tutorial
+                </button>
+                {/* Post Button */}
+                <button 
+                  onClick={handleCreatePost}
+                  className="bg-[#43A895] text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-[#359182] transition"
+                >
+                  Post
+                </button>
+              </div>
+            </div>
+            {/* File Info */}
+            <div className="text-left mt-2">
+              <span className="text-xs text-gray-500">*โพสต์ต้องการเพิ่มรูปหรือคลิปอย่างน้อย 1 files</span>
             </div>
           </div>
-
-          <div className="flex items-center gap-3">
-            {/* Tutorial Button */}
-            <button className="bg-[#E2C576] text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-[#C5A241] transition flex items-center gap-1">
-              💡 Tutorial
-            </button>
-            
-            {/* Post Button */}
-            <button 
-              onClick={handleCreatePost}
-              className="bg-[#43A895] text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-[#359182] transition"
-            >
-              Post
-            </button>
-          </div>
-        </div>
-
-        {/* File Info */}
-        <div className="text-left">
-          <span className="text-xs text-gray-500">*ไฟล์จะถูกอัปโหลดไปที่ระบบ หลังจาก {fileCount} files</span>
-        </div>
       </div>
     </div>
   );

@@ -1,5 +1,3 @@
-// import { Link, useNavigate } from 'react-router-dom';
-
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ChevronDown, X, Bold, Italic, Underline, List, AlignLeft, ExternalLink, Image, MoreHorizontal } from 'lucide-react';
@@ -214,8 +212,8 @@ function Header() {
 
       {/* Added Create Post Modal Popup */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-md relative shadow-2xl">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-4">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-150 relative shadow-2xl">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-800">Create Post</h2>
@@ -228,36 +226,26 @@ function Header() {
             </div>
 
             {/* Title Input */}
-            <div className="mb-4">
+            <div className="mb-4 ">
               <input
                 type="text"
                 placeholder="Title*"
                 value={postTitle}
                 onChange={(e) => setPostTitle(e.target.value)}
-                className="w-full px-4 py-3 bg-gray-100 rounded-lg border-none outline-none text-gray-700 placeholder-gray-500"
+                className="w-full px-4 py-3 bg-gray-100 rounded-lg border-none shadow-sm outline-none text-gray-700 placeholder-gray-500"
               />
             </div>
 
             {/* Rich Text Editor */}
             <div className="mb-6">
               {/* Toolbar */}
-              <div className="bg-gray-800 rounded-t-lg p-2 flex items-center gap-1 text-white text-sm">
-                <span className="text-xs mr-2">Switch to Markdown Editor</span>
-                <div className="flex gap-1">
-                  <button className="p-1 hover:bg-gray-700 rounded"><Bold size={16} /></button>
-                  <button className="p-1 hover:bg-gray-700 rounded"><Italic size={16} /></button>
-                  <button className="p-1 hover:bg-gray-700 rounded"><Underline size={16} /></button>
-                  <button className="p-1 hover:bg-gray-700 rounded"><AlignLeft size={16} /></button>
-                  <button className="p-1 hover:bg-gray-700 rounded"><List size={16} /></button>
-                  <button className="p-1 hover:bg-gray-700 rounded"><ExternalLink size={16} /></button>
-                  <button className="p-1 hover:bg-gray-700 rounded"><Image size={16} /></button>
-                  <button className="p-1 hover:bg-gray-700 rounded"><MoreHorizontal size={16} /></button>
-                </div>
+              <div className="bg-gray-900 rounded-t-lg p-2 flex items-center gap-1 text-white text-sm">
+                <span className="text-xs mr-2">Markdown Editor</span>
               </div>
               
               {/* Text Area */}
               <textarea
-                placeholder="Body"
+                placeholder="Body text (optional)"
                 value={postContent}
                 onChange={(e) => setPostContent(e.target.value)}
                 className="w-full h-24 px-4 py-3 bg-gray-800 text-white rounded-b-lg border-none outline-none resize-none placeholder-gray-400"
@@ -266,7 +254,7 @@ function Header() {
 
             {/* Categories */}
             <div className="mb-4">
-              <div className="bg-gray-400 rounded-full px-4 py-2 mb-3">
+              <div className="bg-gray-600 rounded-full shadow-sm px-4 py-2 mb-3">
                 <span className="text-white font-medium">Categories:</span>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {categories.map(category => (
@@ -297,26 +285,32 @@ function Header() {
                 {/* Age Recommend */}
                 <div className="flex items-center gap-2">
                   <span className="text-gray-600 text-sm">Age Recommend</span>
-                  <input
-                    type="text"
-                    placeholder="<10"
+                  <select
                     value={ageRecommend}
                     onChange={(e) => setAgeRecommend(e.target.value)}
-                    className="w-12 px-2 py-1 bg-gray-100 rounded text-center text-xs border-none outline-none"
-                  />
+                    className="w-15 px-1 py-1 bg-gray-100 rounded text-center text-xs border-none outline-none"
+                  >
+                    <option value="0-5">0-5</option>
+                    <option value="6-10">6-10</option>
+                    <option value="11-15">11-15</option>
+                    <option value="16-19">16-19</option>
+                    <option value="20+">20+</option>
+                  </select>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 {/* Tutorial Button */}
-                <button className="bg-[#E2C576] text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-[#C5A241] transition flex items-center gap-1">
-                  💡 Tutorial
-                </button>
-                
+               
+                   <Link to="/tutorial">
+                    <button className="bg-[#f7dc6f] text-white px-4 py-2 shadow-sm rounded-full text-sm font-medium hover:bg-[#C5A241] transition flex items-center gap-1">
+                      <img src="tutorial.png" alt="Tutorial Icon" className="w-5 h-5" /> Tutorial
+                    </button>
+                  </Link>
                 {/* Post Button */}
                 <button 
                   onClick={handleCreatePost}
-                  className="bg-[#43A895] text-white px-6 py-2 rounded-full text-sm font-medium hover:bg-[#359182] transition"
+                  className="bg-[#45b39d] text-white px-6 py-2 shadow-sm rounded-full text-sm font-medium hover:bg-[#359182] transition"
                 >
                   Post
                 </button>

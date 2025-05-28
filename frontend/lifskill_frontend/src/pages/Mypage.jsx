@@ -6,6 +6,10 @@ import Footer from './Footer';
 
 function Mypage() {
   const [posts, setPosts] = useState([]);
+  const [sortOrder, setSortOrder] = useState('recent');
+  const [showCategories, setShowCategories] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     fetch('http://localhost:8080/my-posts', {
@@ -19,6 +23,30 @@ function Mypage() {
         setPosts([]);
       });
   }, []);
+
+  useEffect(() => {
+    // ดึง categories จาก backend (แก้ endpoint ตามจริง)
+    fetch('http://localhost:8080/categories', {
+      method: 'GET',
+      credentials: 'include',
+    })
+      .then((res) => res.json())
+      .then((data) => setCategories(data))
+      .catch((err) => {
+        console.error('Error fetching categories:', err);
+        setCategories([]);
+      });
+  }, []);
+
+  const handleSortClick = (order) => {
+    setSortOrder(order);
+    // เพิ่ม logic การ sort post ตาม order ถ้าต้องการ
+  };
+
+  const handleCategoryClick = (categoryId) => {
+    setSelectedCategory(categoryId);
+    // เพิ่ม logic filter post ตาม category ถ้าต้องการ
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
@@ -47,22 +75,67 @@ function Mypage() {
      
     </div>
 
+          {/* Filter Section */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
           <div className="flex items-center gap-6">
             <h2 className="text-2xl font-bold text-gray-900">Post</h2>
             <div className="h-6 w-px bg-gray-300"></div>
             <div className="flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-2 cursor-pointer text-teal-600 hover:text-teal-700 font-medium">
+              {/* Sort by */}
+              <div
+                className={`flex items-center gap-2 cursor-pointer transition-colors ${sortOrder === 'recent' ? 'text-teal-600 hover:text-teal-700 font-medium' : 'text-gray-500 hover:text-gray-700'}`}
+                onClick={() => handleSortClick('recent')}
+              >
+                <span>Recent</span>
+              </div>
+              <div
+                className={`flex items-center gap-2 cursor-pointer transition-colors ${sortOrder === 'mostlike' ? 'text-teal-600 hover:text-teal-700 font-medium' : 'text-gray-500 hover:text-gray-700'}`}
+                onClick={() => handleSortClick('mostlike')}
+              >
                 <span>Most Liked</span>
-                <ChevronDown className="w-4 h-4" />
               </div>
-              <div className="flex items-center gap-2 cursor-pointer text-gray-500 hover:text-gray-700">
-                <span>Categories</span>
-                <ChevronDown className="w-4 h-4" />
+              
+
+              {/* Categories Dropdown */}
+              <div className="relative">
+                <div
+                  className="flex items-center gap-2 cursor-pointer text-gray-500 hover:text-gray-700"
+                  onClick={() => setShowCategories(!showCategories)}
+                >
+                  <span>Categories</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform ${showCategories ? 'rotate-180' : 'rotate-0'}`} />
+                </div>
+                {showCategories && (
+
+                  <div className="absolute z-50 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+
+                    <div className="py-1">
+                       <div
+                          key="all-categories"
+                          className={`block px-4 py-2 text-sm cursor-pointer ${selectedCategory === null ? 'bg-gray-100 text-gray-900' : 'text-gray-700 hover:bg-gray-100'}`}
+                          onClick={() => handleCategoryClick(null)} // Select all categories
+                        >
+                          All Categories
+                        </div>
+                      {Array.isArray(categories) && categories.map((category) => (
+                        <div
+                          key={category.ID}
+                          className={`block px-4 py-2 text-sm cursor-pointer ${selectedCategory === category.ID ? 'bg-gray-100 text-gray-900' : 'text-gray-700 hover:bg-gray-100'}`}
+                          onClick={() => handleCategoryClick(category.ID)}
+                        >
+                          {category.categories_name}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
+
             </div>
           </div>
-          <div className="text-sm text-gray-500">{Array.isArray(posts) ? posts.length : 0} posts</div>
+          <div className="text-sm text-gray-500">
+            {Array.isArray(posts) ? posts.length : 0} posts
+          </div>
         </div>
 
         <div className="grid gap-6">
