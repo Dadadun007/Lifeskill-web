@@ -156,11 +156,9 @@ function Home() {
                   <ChevronDown className={`w-4 h-4 transition-transform ${showCategories ? 'rotate-180' : 'rotate-0'}`} />
                 </div>
                 {showCategories && (
-<<<<<<< Updated upstream
+
                   <div className="absolute z-50 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-=======
-                  <div className="absolute z-10 mt-2 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
->>>>>>> Stashed changes
+
                     <div className="py-1">
                        <div
                           key="all-categories"
