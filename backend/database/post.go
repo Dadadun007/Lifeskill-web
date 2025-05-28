@@ -120,6 +120,7 @@ type PostDTO struct {
 	Status            string        `json:"status"`
 	Categories        []CategoryDTO `json:"categories"`
 	User              UserDTO       `json:"user"`
+	CreatedAt         time.Time     `json:"created_at"`
 }
 
 type CategoryDTO struct {
@@ -180,6 +181,7 @@ func GetAllPosts(db *gorm.DB) fiber.Handler {
 					Username: post.User.Username,
 					Picture:  post.User.Picture,
 				},
+				CreatedAt: post.CreatedAt,
 			}
 			postDTOs = append(postDTOs, postDTO)
 		}
@@ -221,6 +223,7 @@ func GetPostByID(db *gorm.DB) fiber.Handler {
 				Username: post.User.Username,
 				Picture:  post.User.Picture,
 			},
+			CreatedAt: post.CreatedAt,
 		}
 
 		return c.JSON(postDTO)
@@ -312,6 +315,7 @@ func SearchPosts(db *gorm.DB) fiber.Handler {
 					Username: post.User.Username,
 					Picture:  post.User.Picture,
 				},
+				CreatedAt: post.CreatedAt,
 			})
 		}
 
@@ -411,6 +415,7 @@ func GetMyPosts(db *gorm.DB) fiber.Handler {
 					Username: post.User.Username,
 					Picture:  post.User.Picture,
 				},
+				CreatedAt: post.CreatedAt,
 			}
 			postDTOs = append(postDTOs, postDTO)
 		}
@@ -470,6 +475,7 @@ func FilterPosts(db *gorm.DB) fiber.Handler {
 					Username: post.User.Username,
 					Picture:  post.User.Picture,
 				},
+				CreatedAt: post.CreatedAt,
 			}
 			postDTOs = append(postDTOs, postDTO)
 		}
@@ -569,6 +575,7 @@ func GetApprovedPosts(db *gorm.DB) fiber.Handler {
 					Username: post.User.Username,
 					Picture:  post.User.Picture,
 				},
+				CreatedAt: post.CreatedAt,
 			}
 			postDTOs = append(postDTOs, postDTO)
 		}
@@ -763,6 +770,7 @@ func GetPendingPostsForExpert(db *gorm.DB) fiber.Handler {
 					Username: post.User.Username,
 					Picture:  post.User.Picture,
 				},
+				CreatedAt: post.CreatedAt,
 			}
 			postDTOs = append(postDTOs, postDTO)
 		}
@@ -882,6 +890,7 @@ func GetMyAchievedPosts(db *gorm.DB) fiber.Handler {
 					Username: post.User.Username,
 					Picture:  post.User.Picture,
 				},
+				CreatedAt: post.CreatedAt,
 			}
 			postDTOs = append(postDTOs, postDTO)
 		}
@@ -946,6 +955,7 @@ func RecommendPostsByAge(db *gorm.DB) fiber.Handler {
 							Username: post.User.Username,
 							Picture:  post.User.Picture,
 						},
+						CreatedAt: post.CreatedAt,
 					}
 					recommended = append(recommended, postDTO)
 				}

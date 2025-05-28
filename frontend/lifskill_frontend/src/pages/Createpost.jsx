@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { RichTextEditor } from '@mantine/rte';
+
 import {X,Bold,Italic,Underline,Type,Paperclip,List,ListOrdered,Link,Undo,Table,MoreHorizontal,Upload,ChevronDown,} from "lucide-react"
 
 function Createpost({ isOpen, onClose }) {
