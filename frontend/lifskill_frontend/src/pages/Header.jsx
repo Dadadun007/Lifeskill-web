@@ -164,7 +164,7 @@ function Header() {
               {isDropdownOpen && (
                 <div className="absolute left-0 top-full w-full bg-[#85929e] rounded-b-2xl shadow-xl z-50 flex flex-col items-start overflow-hidden">
                   <Link
-                    to="/"
+                    to="/mypage"
                     className="flex items-center gap-3 w-full px-4 py-3 !text-white hover:bg-gray-600 transition"
                     onClick={() => setIsDropdownOpen(false)}
                   >
