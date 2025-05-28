@@ -11,6 +11,7 @@ function Header() {
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Added state for popup form
   const [postTitle, setPostTitle] = useState('');
@@ -91,29 +92,41 @@ function Header() {
     setAgeRecommend('');
   };
 
+  // Add search handler
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
   return (
     <>
       <nav className="w-full bg-white shadow-sm px-4 py-3 flex flex-col md:flex-row items-center justify-between gap-3">
         {/* Logo */}
         <div className="flex items-center">
-          <Link to="/home">
+          <Link to="/">
             <img src="logo.png" alt="LifeSkill Icon" className="w-15 h-15 cursor-pointer" />
           </Link>
           <span className="text-xl font-bold text-gray-700">Life Skill</span>
         </div>
         
-
         {/* Search Bar */}
-        <div className="flex items-center w-full md:max-w-[600px] px-3 py-1">
+        <form onSubmit={handleSearch} className="flex items-center w-full md:max-w-[600px] px-3 py-1">
           <input
             type="text"
-            placeholder="Search..."
+            placeholder="Search what content you want..."
             className="flex-1 text-sm text-black shadow-sm rounded-l-full px-3 py-2 bg-white"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
-          <button className="flex items-center justify-center bg-[#3498db] hover:bg-[#2471a3] h-[37px] w-[60px] rounded-r-full">
+          <button 
+            type="submit"
+            className="flex items-center justify-center bg-[#3498db] hover:bg-[#2471a3] h-[37px] w-[60px] rounded-r-full"
+          >
             <img src="Search.png" alt="Search Icon" className="w-[20px] h-[20px] object-contain" />
           </button>
-        </div>
+        </form>
 
         {/* Login / Profile */}
         {user ? (

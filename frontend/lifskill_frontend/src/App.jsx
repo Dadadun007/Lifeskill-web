@@ -8,6 +8,7 @@ import Tutorial from './pages/Tutorial.jsx'
 import Contactus from './pages/Contactus.jsx'
 import Mypage from './pages/Mypage.jsx'
 import Createpost from './pages/Createpost.jsx'
+import Search from './pages/Search.jsx'
 
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
         <Route path="/tutorial" element={<Tutorial />} />
         <Route path="/contactus" element={<Contactus />} />
         <Route path="/mypage" element={<Mypage />} />
+        <Route path="/search" element={<Search />} />
       </Routes>
     </Router>
   )
