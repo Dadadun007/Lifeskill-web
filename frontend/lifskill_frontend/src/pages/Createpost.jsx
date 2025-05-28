@@ -1,20 +1,6 @@
-import { useState, useRef, useEffect } from "react"
-import {
-  X,
-  Bold,
-  Italic,
-  Underline,
-  Type,
-  Paperclip,
-  List,
-  ListOrdered,
-  Link,
-  Undo,
-  Table,
-  MoreHorizontal,
-  Upload,
-  ChevronDown,
-} from "lucide-react"
+import { useState } from "react"
+import { RichTextEditor } from '@mantine/rte';
+import {X,Bold,Italic,Underline,Type,Paperclip,List,ListOrdered,Link,Undo,Table,MoreHorizontal,Upload,ChevronDown,} from "lucide-react"
 
 function Createpost({ isOpen, onClose }) {
   const [postTitle, setPostTitle] = useState('');
@@ -22,7 +8,6 @@ function Createpost({ isOpen, onClose }) {
   const [selectedCategories, setSelectedCategories] = useState(['Foods', 'Pets']);
   const [ageRecommend, setAgeRecommend] = useState('<10');
   const [fileCount, setFileCount] = useState(1);
-
   const categories = ['Foods', 'Pets', 'Travel', 'Tech', 'Health', 'Education', 'Sports', 'Art'];
 
   const toggleCategory = (category) => {
@@ -46,8 +31,8 @@ function Createpost({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl p-6 w-full max-w-md relative shadow-2xl">
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-3xl p-10 w-full max-w-2xl relative shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-gray-800">Create Post</h2>
@@ -55,7 +40,7 @@ function Createpost({ isOpen, onClose }) {
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 text-2xl"
           >
-            <X size={24} />
+            &#10005;
           </button>
         </div>
 
@@ -70,32 +55,12 @@ function Createpost({ isOpen, onClose }) {
           />
         </div>
 
-        {/* Rich Text Editor */}
+        {/* Mantine Rich Text Editor */}
         <div className="mb-6">
-          {/* Toolbar */}
-          <div className="bg-gray-800 rounded-t-lg p-2 flex items-center justify-between text-white text-sm">
-            <div className="flex items-center gap-1">
-              <button className="p-1 hover:bg-gray-700 rounded"><Bold size={16} /></button>
-              <button className="p-1 hover:bg-gray-700 rounded"><Italic size={16} /></button>
-              <button className="p-1 hover:bg-gray-700 rounded"><Type size={16} /></button>
-              <button className="p-1 hover:bg-gray-700 rounded"><Underline size={16} /></button>
-              <button className="p-1 hover:bg-gray-700 rounded"><Paperclip size={16} /></button>
-              <button className="p-1 hover:bg-gray-700 rounded"><List size={16} /></button>
-              <button className="p-1 hover:bg-gray-700 rounded"><ListOrdered size={16} /></button>
-              <button className="p-1 hover:bg-gray-700 rounded"><Link size={16} /></button>
-              <button className="p-1 hover:bg-gray-700 rounded"><Undo size={16} /></button>
-              <button className="p-1 hover:bg-gray-700 rounded"><Table size={16} /></button>
-              <button className="p-1 hover:bg-gray-700 rounded"><MoreHorizontal size={16} /></button>
-            </div>
-            <span className="text-xs">Switch to Markdown Editor</span>
-          </div>
-          
-          {/* Text Area */}
-          <textarea
-            placeholder="Body"
+          <RichTextEditor
             value={postContent}
-            onChange={(e) => setPostContent(e.target.value)}
-            className="w-full h-24 px-4 py-3 bg-gray-800 text-white rounded-b-lg border-none outline-none resize-none placeholder-gray-400"
+            onChange={setPostContent}
+            style={{ minHeight: 180, marginBottom: 20 }}
           />
         </div>
 
@@ -128,7 +93,6 @@ function Createpost({ isOpen, onClose }) {
           <div className="flex items-center gap-3">
             {/* Import Files */}
             <button className="bg-gray-300 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-400 transition flex items-center gap-1">
-              <Paperclip size={12} />
               Import files
             </button>
             
