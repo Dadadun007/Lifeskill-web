@@ -32,7 +32,10 @@ function Header() {
         }
 
         const data = await res.json();
-        if (data?.username) setUser(data);
+        if (data?.username) {
+          console.log('User data received:', data);
+          setUser(data);
+        }
       } catch (err) {
         console.error('Failed to fetch user:', err.message);
         setUser(null);
@@ -150,7 +153,7 @@ function Header() {
               >
                 <div className="flex items-center gap-2">
                   <img
-                    src={user.avatar || "/default-avatar.png"}
+                    src={user.picture ? `http://localhost:8080/${user.picture}` : "/default-avatar.png"}
                     alt="User Avatar"
                     className="w-6 h-6 rounded-full object-cover"
                   />
