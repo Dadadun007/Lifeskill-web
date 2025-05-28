@@ -3,6 +3,54 @@ import { useNavigate, Link } from 'react-router-dom';
 import { ChevronDown, X, Bold, Italic, Underline, List, AlignLeft, ExternalLink, Image, MoreHorizontal } from 'lucide-react';
 import Createpost from './Createpost';
 
+// Add DefaultAvatar component
+const DefaultAvatar = ({ username, size = 24 }) => {
+  const getInitials = (name) => {
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const getRandomColor = (name) => {
+    const colors = [
+      '#3498db', // Blue
+      '#2ecc71', // Green
+      '#e74c3c', // Red
+      '#f1c40f', // Yellow
+      '#9b59b6', // Purple
+      '#1abc9c', // Turquoise
+      '#e67e22', // Orange
+      '#34495e', // Dark Blue
+    ];
+    
+    // Use the username to consistently generate the same color for the same user
+    const index = name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    return colors[index % colors.length];
+  };
+
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        backgroundColor: getRandomColor(username),
+        color: 'white',
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: `${size * 0.4}px`,
+        fontWeight: 'bold',
+      }}
+    >
+      {getInitials(username)}
+    </div>
+  );
+};
+
 function Header() {
   const [user, setUser] = useState(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -152,11 +200,22 @@ function Header() {
                   ${isDropdownOpen ? "rounded-t-2xl" : "rounded-full"}`}
               >
                 <div className="flex items-center gap-2">
-                  <img
-                    src={user.picture ? `http://localhost:8080/${user.picture}` : "/default-avatar.png"}
-                    alt="User Avatar"
-                    className="w-6 h-6 rounded-full object-cover"
-                  />
+                  {user.picture ? (
+                    <img
+                      src={`http://localhost:8080/${user.picture}`}
+                      alt="User Avatar"
+                      className="w-6 h-6 rounded-full object-cover"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.style.display = 'none';
+                        e.target.parentNode.appendChild(
+                          <DefaultAvatar username={user.username} size={24} />
+                        );
+                      }}
+                    />
+                  ) : (
+                    <DefaultAvatar username={user.username} size={24} />
+                  )}
                   <span className="text-base font-semibold">{user.username}</span>
                 </div>
                 <ChevronDown
