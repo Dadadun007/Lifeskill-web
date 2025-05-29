@@ -204,22 +204,6 @@ const Post = () => {
             <p className="text-gray-700 mb-2">{post.content}</p>
           </div>
 
-          {/* YouTube Video */}
-          {post.youtube_link && (
-            <div className="mb-6">
-              <div className="relative pb-[56.25%] h-0">
-                <iframe
-                  className="absolute top-0 left-0 w-full h-full rounded-lg"
-                  src={`https://www.youtube.com/embed/${getYouTubeVideoId(post.youtube_link)}`}
-                  title="YouTube video player"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                ></iframe>
-              </div>
-            </div>
-          )}
-
           {/* Post Image */}
           {post.picture && (
             <div className="mb-6">
@@ -228,6 +212,23 @@ const Post = () => {
                 alt="Post image"
                 className="w-full rounded-lg bg-gray-200"
               />
+            </div>
+          )}
+
+          {/* YouTube Video */}
+          {post.youtube_link && (
+            <div className="mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">Video : </h2>
+                <div className="relative pb-[56.25%] h-0">
+                    <iframe
+                    className="absolute top-0 left-0 w-full h-full rounded-lg"
+                    src={`https://www.youtube.com/embed/${getYouTubeVideoId(post.youtube_link)}`}
+                    title="YouTube video player"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    ></iframe>
+                </div>
             </div>
           )}
 
