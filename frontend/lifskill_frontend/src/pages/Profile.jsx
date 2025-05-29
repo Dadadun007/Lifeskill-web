@@ -76,6 +76,24 @@ const handleChangePasswordSubmit = async () => {
     talents: [],
   });
   const [categories, setCategories] = useState([]);
+  const [myPosts, setMyPosts] = useState([]);
+
+  // ฟังก์ชันสำหรับดึงโพสต์ของตัวเอง
+  const fetchMyPosts = () => {
+    fetch('http://localhost:8080/my-posts', { credentials: 'include' })
+      .then(res => {
+        if (res.status === 401) {
+          window.location.href = '/login';
+          return [];
+        }
+        return res.json();
+      })
+      .then(data => {
+        setMyPosts(data);
+        console.log("myPosts data:", data);
+      })
+      .catch(() => setMyPosts([]));
+  };
 
   useEffect(() => {
     fetch('http://localhost:8080/user/me', { credentials: 'include' })
@@ -114,6 +132,10 @@ const handleChangePasswordSubmit = async () => {
       .then(res => res.json())
       .then(data => setCategories(data))
       .catch(err => setCategories([]));
+  }, []);
+
+  useEffect(() => {
+    fetchMyPosts();
   }, []);
 
   const handleImageChange = (e) => {
@@ -201,6 +223,23 @@ const handleChangePasswordSubmit = async () => {
 
   const handleCancel = () => {
     setIsPopupOpen(false);
+  };
+
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm('Are you sure you want to delete this post?')) return;
+    try {
+      const res = await fetch(`http://localhost:8080/delete_posts/${postId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (res.ok) {
+        fetchMyPosts();
+      } else {
+        alert('Failed to delete post.');
+      }
+    } catch {
+      alert('Server error.');
+    }
   };
 
   return (
@@ -390,7 +429,7 @@ const handleChangePasswordSubmit = async () => {
           </div>
         )}
 
-         <Header />
+         <Header onPostCreated={fetchMyPosts} />
 
       {/* Profile Section */}
       <main className="flex-1 px-4 md:px-6 w-full max-w-screen-lg mx-auto mt-8">
@@ -438,48 +477,74 @@ const handleChangePasswordSubmit = async () => {
 
         {/* Your Posts */}
         <section className="flex flex-col gap-6">
-          {/* Post 1 */}
-          <div className="flex flex-col md:flex-row bg-white rounded-lg shadow-md p-4 relative">
-            <div className="flex flex-col justify-between flex-1">
-              <div className="flex justify-between items-center mb-2">
-                <div className="flex items-center gap-2">
-                  <img src="profile.jpg" alt="Profile" className="w-8 h-8 rounded-full object-cover" />
-                  <h4 className="font-bold text-black text-sm">Username</h4>
+          {myPosts.length === 0 ? (
+            <div className="text-center text-gray-500">No posts yet.</div>
+          ) : (
+            myPosts.map((post, idx) => (
+              <div key={post.id || idx} className="flex flex-col md:flex-row bg-white rounded-lg shadow-md p-4 relative">
+                <div className="flex flex-col justify-between flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <img
+                      src={
+                        post.user && post.user.picture
+                          ? (
+                              post.user.picture.startsWith('http')
+                                ? post.user.picture
+                                : post.user.picture.includes('uploads/profile_pictures/')
+                                  ? "http://localhost:8080/" + post.user.picture.replace(/^\.?\/?/, '')
+                                  : "http://localhost:8080/uploads/profile_pictures/" + encodeURIComponent(post.user.picture)
+                            )
+                          : "/default-profile.png"
+                      }
+                      alt="Profile"
+                      className="w-8 h-8 rounded-full object-cover"
+                      onError={e => {e.target.onerror=null; e.target.src='/default-profile.png';}}
+                    />
+                    <h4 className="font-bold text-black text-lg ">{post.user && post.user.username ? post.user.username : "Unknown"}</h4>
+                    <button
+                      onClick={() => handleDeletePost(post.id)}
+                      className="bg-[#e74c3c] rounded-full px-3 ml-2 shadow-sm text-white hover:bg-red-700 text-sm"
+                      title="Delete Post"
+                    >
+                      delete
+                    </button>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg">{post.title || "No Title"}</h3>
+                    <p className="text-sm text-gray-600">{post.content || "No Content"}</p>
+                    <div className="mt-2 flex items-center gap-2 flex-wrap">
+                      <span className={`text-xs px-2 py-1 rounded-full ${post.status === 'Approve' ? 'bg-green-200 text-green-800' : post.status === 'Waiting' ? 'bg-yellow-200 text-yellow-800' : 'bg-red-200 text-red-800'}`}>{post.status}</span>
+                      {post.categories && post.categories.length > 0 && post.categories.some(cat => cat.categoriesName || cat.categories_name) ?
+                        post.categories.map((cat, i) =>
+                          (cat.categoriesName || cat.categories_name) ? (
+                            <span key={cat.id || i} className="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded-full">
+                              {cat.categoriesName || cat.categories_name}
+                            </span>
+                          ) : null
+                        )
+                        : <span className="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded-full">No Category</span>
+                      }
+                    </div>
+                  </div>
                 </div>
+                {post.picture ? (
+                  <img
+                    src={
+                      post.picture.startsWith('http')
+                        ? post.picture
+                        : post.picture.startsWith('/')
+                          ? "http://localhost:8080" + post.picture
+                          : "http://localhost:8080/uploads/" + encodeURIComponent(post.picture)
+                    }
+                    alt="Post"
+                    className="w-full md:w-40 h-32 object-cover rounded-lg mb-4 md:mb-0 md:ml-4"
+                    onError={e => {e.target.onerror=null; e.target.src='/default-profile.png';}}
+                  />
+                ) : null}
               </div>
-              <div>
-                <h3 className="font-bold text-lg">Topic</h3>
-                <p className="text-sm text-gray-600">detail</p>
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="bg-green-200 text-green-800 text-xs px-2 py-1 rounded-full">Approve</span>
-                  <span className="bg-red-200 text-red-800 text-xs px-2 py-1 rounded-full">Art</span>
-                </div>
-              </div>
-            </div>
-            <button className="absolute top-2 right-2 text-red-500">🗑️</button>
-            <img src="test.png" alt="Post" className="w-full md:w-40 h-32 object-cover rounded-lg mb-4 md:mb-0 md:ml-4" />
-          </div>
-
-          {/* Post 2 */}
-          <div className="flex flex-col md:flex-row bg-white rounded-lg shadow-md p-4 relative">
-            <div className="flex flex-col justify-between flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <img src="profile.jpg" alt="Profile" className="w-8 h-8 rounded-full object-cover" />
-                <h4 className="font-bold text-black text-sm">Username</h4>
-              </div>
-              <div>
-                <h3 className="font-bold text-lg">Topic</h3>
-                <p className="text-sm text-gray-600">detail</p>
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="bg-yellow-200 text-yellow-800 text-xs px-2 py-1 rounded-full">Waiting</span>
-                </div>
-              </div>
-            </div>
-            <img src="test.png" alt="Post" className="w-full md:w-40 h-32 object-cover rounded-lg mb-4 md:mb-0 md:ml-4" />
-            <button className="absolute top-2 right-2 text-red-500">🗑️</button>
-          </div>
+            ))
+          )}
         </section>
-
       </main>
     </div>
   );

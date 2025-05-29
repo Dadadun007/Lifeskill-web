@@ -176,8 +176,8 @@ const Contactus = () => {
               disabled={status.loading}
               className={`w-full flex items-center justify-center gap-2 px-6 py-3 text-white font-medium rounded-lg ${
                 status.loading
-                  ? 'bg-blue-400 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700'
+                  ? 'bg-[#3498db] cursor-not-allowed'
+                  : 'bg-[#2e86c1] hover:bg-[#2471a3]'
               }`}
             >
               {status.loading ? (

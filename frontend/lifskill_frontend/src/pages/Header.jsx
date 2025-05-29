@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ChevronDown, X } from 'lucide-react';
 
-function Header() {
+function Header({ onPostCreated }) {
   const [user, setUser] = useState(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -191,6 +191,7 @@ function Header() {
       resetForm();
       setIsCreateModalOpen(false);
       alert('Post created successfully!');
+      if (onPostCreated) onPostCreated();
     } catch (error) {
       console.error('Error creating post:', error);
       alert('Failed to create post. Please try again.');
