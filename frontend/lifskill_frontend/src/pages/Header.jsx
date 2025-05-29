@@ -168,7 +168,7 @@ function Header() {
         title: postTitle,
         content: postContent,
         categories: selectedCategories,
-        recommend_age_range: ageRecommend,
+        RecommendAgeRange: ageRecommend,
         youtube_link: videoLink,
       };
       const formData = new FormData();
