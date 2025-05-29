@@ -168,8 +168,8 @@ function Header() {
         title: postTitle,
         content: postContent,
         categories: selectedCategories,
-        RecommendAgeRange: ageRecommend,
-        youtube_link: videoLink,
+        age_recommend: ageRecommend,
+        YouTubeLink: videoLink,
       };
       const formData = new FormData();
       formData.append('post', JSON.stringify(postData));
@@ -286,7 +286,7 @@ function Header() {
             <div className="relative w-fit" ref={dropdownRef}>
               <button
                 onClick={() => setIsDropdownOpen((open) => !open)}
-                className={`flex items-center shadow-sm bg-[#85929e] px-4 py-2 text-white hover:bg-gray-600 transition-colors w-50
+                className={`flex items-center shadow-sm bg-[#34495e] px-4 py-2 text-white hover:bg-gray-600 transition-colors w-50
                   ${isDropdownOpen ? "rounded-t-2xl" : "rounded-full"}`}
               >
                 <div className="flex items-center gap-2">
@@ -307,10 +307,10 @@ function Header() {
               </button>
 
               {isDropdownOpen && (
-                <div className="absolute right-0 top-full w-48 bg-[#85929e] rounded-b-2xl shadow-xl z-50 flex flex-col items-start overflow-hidden">
+                <div className="absolute right-0 top-full w-50 bg-[#34495e] rounded-b-2xl shadow-xl z-50 flex flex-col items-start overflow-hidden">
                   <Link
                     to="/mypage"
-                    className="flex items-center gap-3 w-full px-4 py-3 !text-white hover:bg-gray-600 transition"
+                    className="flex items-center gap-3 w-full px-4 py-3 !text-white hover:bg-[#212f3d] transition"
                     onClick={() => setIsDropdownOpen(false)}
                   >
                     <img 
@@ -326,7 +326,7 @@ function Header() {
                   </Link>
                   <Link
                     to="/profile"
-                    className="flex items-center gap-3 w-full px-4 py-3 !text-white hover:bg-gray-600 transition"
+                    className="flex items-center gap-3 w-full px-4 py-3 !text-white hover:bg-[#212f3d] transition"
                     onClick={() => setIsDropdownOpen(false)}
                   >
                     <img 
@@ -342,7 +342,7 @@ function Header() {
                   </Link>
                   <Link
                     to="/postrequest"
-                    className="flex items-center gap-3 w-full px-4 py-3 !text-white hover:bg-gray-600 transition"
+                    className="flex items-center gap-3 w-full px-4 py-3 !text-white hover:bg-[#212f3d] transition"
                     onClick={() => setIsDropdownOpen(false)}
                   >
                     <img 
@@ -358,7 +358,7 @@ function Header() {
                   </Link>
                   <Link
                     to="/contactus"
-                    className="flex items-center gap-3 w-full px-4 py-3 !text-white hover:bg-gray-600 transition"
+                    className="flex items-center gap-3 w-full px-4 py-3 !text-white hover:bg-[#212f3d] transition"
                     onClick={() => setIsDropdownOpen(false)}
                   >
                     <img 
@@ -374,7 +374,7 @@ function Header() {
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="flex items-center gap-3 w-full px-4 py-3 !text-white hover:bg-gray-600 transition"
+                    className="flex items-center gap-3 w-full px-4 py-3 !text-white hover:bg-[#212f3d] transition"
                   >
                     <img 
                       src="/logout.png" 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Header from './Header';
 
@@ -6,19 +6,61 @@ function Profile() {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [profileImage, setProfileImage] = useState("profile.jpg");
   const [formData, setFormData] = useState({
-    username: "Username",
-    email: "test@gmail.com",
-    age: "18",
-    gender: "Male",
-    talents: ["Art", "Cook"],
+    username: "",
+    email: "",
+    age: "",
+    gender: "",
+    talents: [],
   });
+  const [categories, setCategories] = useState([]);
 
-  const allTalents = ["Art", "Cook", "Photography", "Coding"];
+  useEffect(() => {
+    fetch('http://localhost:8080/user/me', { credentials: 'include' })
+      .then(res => res.json())
+      .then(user => {
+        // ตรวจสอบ talents ว่าเป็น array ของ string หรือ object
+        let talents = [];
+        if (Array.isArray(user.talents) && typeof user.talents[0] === "string") {
+          talents = user.talents;
+        } else if (Array.isArray(user.ExpertCategories)) {
+          talents = user.ExpertCategories.map(cat => cat.categories_name || cat.CategoriesName);
+        }
+        setFormData({
+          username: user.username || "",
+          email: user.email || "",
+          age: user.age ? String(user.age) : "",
+          gender: user.gender || user.sex || "",
+          talents: talents,
+        });
+        if (user.picture) {
+          let picPath = user.picture.replace(/^\.?\/?/, '');
+          if (!picPath.startsWith('http')) {
+            picPath = `http://localhost:8080/${picPath}`;
+          }
+          setProfileImage(picPath);
+        } else {
+          setProfileImage("/default-profile.png"); // fallback
+        }
+        localStorage.setItem('user', JSON.stringify(user));
+      })
+      .catch(() => setProfileImage("/default-profile.png"));
+  }, []);
+
+  useEffect(() => {
+    fetch('http://localhost:8080/categories')
+      .then(res => res.json())
+      .then(data => setCategories(data))
+      .catch(err => setCategories([]));
+  }, []);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setProfileImage(URL.createObjectURL(file));
+      setFormData(prev => ({
+        ...prev,
+        profileFile: file,
+      }));
     }
   };
 
@@ -39,9 +81,59 @@ function Profile() {
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsPopupOpen(false);
-    // ปกติจะส่งข้อมูลไป server ตรงนี้ แต่ตอนนี้ปิด popup อย่างเดียว
+    // map talents (ชื่อ) เป็น id
+    const expertCategoryIDs = formData.talents
+      .map(name => {
+        const cat = categories.find(c => c.categories_name === name);
+        return cat ? cat.ID : null;
+      })
+      .filter(id => id !== null);
+    const form = new FormData();
+    form.append("username", formData.username);
+    form.append("email", formData.email);
+    form.append("age", Number(formData.age));
+    form.append("gender", formData.gender);
+    // ส่ง expertCategoryIDs ทีละอัน (array)
+    expertCategoryIDs.forEach(id => form.append("expertCategoryIDs", id));
+    if (formData.profileFile) {
+      form.append("picture", formData.profileFile);
+    }
+    await fetch("http://localhost:8080/user/update", {
+      method: "PUT",
+      credentials: "include",
+      body: form,
+    });
+    // ดึง user/me ใหม่หลัง save สำเร็จ
+    fetch('http://localhost:8080/user/me', { credentials: 'include' })
+      .then(res => res.json())
+      .then(user => {
+        let talents = [];
+        if (Array.isArray(user.talents) && typeof user.talents[0] === "string") {
+          talents = user.talents;
+        } else if (Array.isArray(user.ExpertCategories)) {
+          talents = user.ExpertCategories.map(cat => cat.categories_name || cat.CategoriesName);
+        }
+        setFormData({
+          username: user.username || "",
+          email: user.email || "",
+          age: user.age ? String(user.age) : "",
+          gender: user.gender || user.sex || "",
+          talents: talents,
+        });
+        if (user.picture) {
+          let picPath = user.picture.replace(/^\.?\/?/, '');
+          if (!picPath.startsWith('http')) {
+            picPath = `http://localhost:8080/${picPath}`;
+          }
+          setProfileImage(picPath);
+        } else {
+          setProfileImage("/default-profile.png");
+        }
+        localStorage.setItem('user', JSON.stringify(user));
+      })
+      .catch(() => setProfileImage("/default-profile.png"));
   };
 
   const handleCancel = () => {
@@ -53,21 +145,29 @@ function Profile() {
       {/* Pop-up */}
       {isPopupOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-8 w-full max-w-md relative">
+          <div className="bg-white rounded-2xl p-6 md:p-8 w-full max-w-md md:max-w-lg relative shadow-lg overflow-y-auto" style={{ maxHeight: '90vh' }}>
             <div className="flex flex-col items-center gap-4">
               {/* รูปโปรไฟล์ */}
-              <div className="relative">
+              <div className="relative flex flex-col items-center">
                 <img
                   src={profileImage}
                   alt="Profile"
                   className="w-24 h-24 rounded-full object-cover"
                 />
                 <input
+                  id="profile-upload"
                   type="file"
                   accept="image/*"
+                  style={{ display: "none" }}
                   onChange={handleImageChange}
-                  className="absolute inset-0 opacity-0 cursor-pointer"
                 />
+                <label
+                  htmlFor="profile-upload"
+                  className="mt-2 text-gray-500 text-sm cursor-pointer hover:underline"
+                  style={{ color: "#888" }}
+                >
+                  Upload Profile
+                </label>
               </div>
 
               {/* ฟอร์ม */}
@@ -80,7 +180,7 @@ function Profile() {
                         name="username"
                         value={formData.username}
                         onChange={handleChange}
-                        className="w-full border rounded-full px-4 py-2"
+                        className="w-full px-3 py-2 bg-gray-100 rounded-lg border-none shadow-sm outline-none text-gray-800 placeholder-gray-800"
                         />
                     </div>
 
@@ -92,7 +192,7 @@ function Profile() {
                         name="email"
                         value={formData.email}
                         onChange={handleChange}
-                        className="w-full border rounded-full px-4 py-2"
+                         className="w-full px-3 py-2 bg-gray-100 rounded-lg  shadow-sm outline-none text-gray-800 "
                         />
                     </div>
 
@@ -105,7 +205,7 @@ function Profile() {
                             name="age"
                             value={formData.age}
                             onChange={handleChange}
-                            className="w-full border rounded-full px-4 py-2"
+                            className="w-full px-3 py-2 bg-gray-100 rounded-lg shadow-sm outline-none text-gray-800 "
                         />
                         </div>
                         <div className="flex-1">
@@ -114,7 +214,7 @@ function Profile() {
                             name="gender"
                             value={formData.gender}
                             onChange={handleChange}
-                            className="w-full border rounded-full px-4 py-2"
+                             className="w-full px-3 py-2 bg-gray-100 rounded-lg shadow-sm outline-none text-gray-800 "
                         >
                             <option value="Male">Male</option>
                             <option value="Female">Female</option>
@@ -125,20 +225,20 @@ function Profile() {
 
                     {/* Talents แบบปุ่ม */}
                     <div>
-                        <label className="block text-sm font-semibold mb-2">Talents</label>
+                        <label className="block text-sm font-semibold mb-1">Talents</label>
                         <div className="flex flex-wrap gap-2">
-                        {allTalents.map((talent) => (
+                        {categories.map((cat) => (
                             <button
-                            key={talent}
+                            key={cat.ID}
                             type="button"
-                            onClick={() => handleTalentChange(talent)}
-                            className={`px-4 py-2 rounded-full border 
-                                ${formData.talents.includes(talent) 
-                                ? 'bg-blue-500 text-white' 
+                            onClick={() => handleTalentChange(cat.categories_name)}
+                            className={`px-2 py-1 rounded-2xl  
+                                ${formData.talents.includes(cat.categories_name) 
+                                ? 'bg-[#5dade2] text-white shadow-sm' 
                                 : 'bg-gray-200 text-gray-700'}
                             `}
                             >
-                            {talent}
+                            {cat.categories_name}
                             </button>
                         ))}
                         </div>
@@ -149,13 +249,13 @@ function Profile() {
               <div className="flex justify-center gap-4 mt-4">
                 <button
                   onClick={handleSave}
-                  className="bg-[#43A895] hover:bg-green-600 text-white font-bold py-2 px-6 rounded-full"
+                  className="bg-[#2ecc71] shadow-sm hover:bg-green-600 text-white font-bold py-2 px-6 rounded-full"
                 >
                   Save
                 </button>
                 <button
                   onClick={handleCancel}
-                  className="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-full"
+                  className="bg-gray-400 shadow-sm hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-full"
                 >
                   Cancel
                 </button>
@@ -188,11 +288,11 @@ function Profile() {
           <div className="absolute bottom-6 right-6 flex flex-col md:flex-row gap-2">
             <button
               onClick={() => setIsPopupOpen(true)}
-              className="bg-[#5A7FB3] hover:bg-[#476799] text-white px-6 py-2 rounded-full"
+              className="bg-[#3498db] hover:bg-[#476799] shadow-sm text-white px-6 py-2 rounded-full"
             >
               Edit Profile
             </button>
-            <button className="bg-[#43A895] hover:bg-[#2e7b6b] text-white px-6 py-2 rounded-full">
+            <button className="bg-[#43A895] hover:bg-[#2e7b6b] shadow-sm text-white px-5 py-2 rounded-full">
               Change Password
             </button>
           </div>
