@@ -5,6 +5,7 @@ import { ChevronDown, X } from 'lucide-react';
 function Header() {
   const [user, setUser] = useState(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -26,6 +27,7 @@ function Header() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
+        setIsLoading(true);
         const res = await fetch('http://localhost:8080/user/me', {
           credentials: 'include',
         });
@@ -40,6 +42,8 @@ function Header() {
       } catch (err) {
         console.error('Failed to fetch user:', err.message);
         setUser(null);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -75,15 +79,21 @@ function Header() {
 
   const handleLogout = async () => {
     try {
-      await fetch("http://localhost:8080/auth/logout", {
+      const res = await fetch("http://localhost:8080/auth/logout", {
         method: "POST",
         credentials: "include",
       });
+      
+      if (!res.ok) {
+        throw new Error('Logout failed');
+      }
+      
       setUser(null);
       setIsDropdownOpen(false);
       navigate("/", { replace: true });
     } catch (err) {
       console.error("Logout failed:", err);
+      // You might want to show an error message to the user here
     }
   };
 
@@ -203,13 +213,21 @@ function Header() {
 
   return (
     <>
-      <nav className="w-full bg-white shadow-sm px-4 py-3 flex flex-col md:flex-row items-center justify-between gap-3">
+      <nav className="w-full bg-white shadow-sm px-4 py-3 flex flex-col md:flex-row items-center justify-between gap-3 sticky top-0 z-50">
         {/* Logo */}
         <div className="flex items-center">
-          <Link to="/">
-            <img src="logo.png" alt="LifeSkill Icon" className="w-15 h-15 cursor-pointer" />
+          <Link to="/" className="flex items-center gap-2">
+            <img 
+              src="/logo.png" 
+              alt="LifeSkill Icon" 
+              className="w-10 h-10 object-contain"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = '/default-logo.png';
+              }}
+            />
+            <span className="text-xl font-bold text-gray-700">Life Skill</span>
           </Link>
-          <span className="text-xl font-bold text-gray-700">Life Skill</span>
         </div>
         
         {/* Search Bar */}
@@ -217,30 +235,48 @@ function Header() {
           <input
             type="text"
             placeholder="Search what content you want..."
-            className="flex-1 text-sm text-black shadow-sm rounded-l-full px-3 py-2 bg-white"
+            className="flex-1 text-sm text-black shadow-sm rounded-l-full px-3 py-2 bg-white border border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
           <button 
             type="submit"
-            className="flex items-center justify-center bg-[#3498db] hover:bg-[#2471a3] h-[37px] w-[60px] rounded-r-full"
+            className="flex items-center justify-center bg-[#3498db] hover:bg-[#2471a3] h-[37px] w-[60px] rounded-r-full transition-colors"
           >
-            <img src="Search.png" alt="Search Icon" className="w-[20px] h-[20px] object-contain" />
+            <img 
+              src="/Search.png" 
+              alt="Search Icon" 
+              className="w-[20px] h-[20px] object-contain"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = '/default-search.png';
+              }}
+            />
           </button>
         </form>
 
         {/* Login / Profile */}
-        {user ? (
+        {isLoading ? (
+          <div className="animate-pulse bg-gray-200 h-10 w-24 rounded-full"></div>
+        ) : user ? (
           <div className="flex items-center gap-3">
             <Link to="/tutorial">
               <button className="bg-[#f7dc6f] text-white font-semibold shadow-sm px-4 py-2 rounded-full text-sm hover:bg-[#C5A241] transition flex items-center gap-2">
-                <img src="tutorial.png" alt="Tutorial Icon" className="w-5 h-5" /> Tutorial
+                <img 
+                  src="/tutorial.png" 
+                  alt="Tutorial Icon" 
+                  className="w-5 h-5"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = '/default-tutorial.png';
+                  }}
+                /> 
+                Tutorial
               </button>
             </Link>
             
-            {/* Create Post Button */}
             <button 
-              className="bg-[#3498db] text-white font-semibold shadow-sm px-4 py-2 rounded-full text-sm hover:bg-[#2471a3] transition" 
+              className="bg-[#3498db] text-white font-semibold shadow-sm px-4 py-2 rounded-full text-sm hover:bg-[#2471a3] transition"
               onClick={() => setIsCreateModalOpen(true)}
             >
               + Create Post
@@ -255,9 +291,13 @@ function Header() {
               >
                 <div className="flex items-center gap-2">
                   <img
-                    src={user.avatar || "/default-avatar.png"}
+                    src={user.picture ? `http://localhost:8080/${user.picture}` : "/default-avatar.png"}
                     alt="User Avatar"
                     className="w-6 h-6 rounded-full object-cover"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = '/default-avatar.png';
+                    }}
                   />
                   <span className="text-base font-semibold">{user.username}</span>
                 </div>
@@ -267,13 +307,21 @@ function Header() {
               </button>
 
               {isDropdownOpen && (
-                <div className="absolute left-0 top-full w-full bg-[#85929e] rounded-b-2xl shadow-xl z-50 flex flex-col items-start overflow-hidden">
+                <div className="absolute right-0 top-full w-48 bg-[#85929e] rounded-b-2xl shadow-xl z-50 flex flex-col items-start overflow-hidden">
                   <Link
                     to="/mypage"
                     className="flex items-center gap-3 w-full px-4 py-3 !text-white hover:bg-gray-600 transition"
                     onClick={() => setIsDropdownOpen(false)}
                   >
-                    <img src="home.png" alt="home Icon" className="w-5 h-5 object-contain" />
+                    <img 
+                      src="/home.png" 
+                      alt="home Icon" 
+                      className="w-5 h-5 object-contain"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = '/default-home.png';
+                      }}
+                    />
                     Home
                   </Link>
                   <Link
@@ -281,7 +329,15 @@ function Header() {
                     className="flex items-center gap-3 w-full px-4 py-3 !text-white hover:bg-gray-600 transition"
                     onClick={() => setIsDropdownOpen(false)}
                   >
-                    <img src="profile.png" alt="profile Icon" className="w-5 h-5 object-contain" />
+                    <img 
+                      src="/profile.png" 
+                      alt="profile Icon" 
+                      className="w-5 h-5 object-contain"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = '/default-profile.png';
+                      }}
+                    />
                     Profile
                   </Link>
                   <Link
@@ -289,7 +345,15 @@ function Header() {
                     className="flex items-center gap-3 w-full px-4 py-3 !text-white hover:bg-gray-600 transition"
                     onClick={() => setIsDropdownOpen(false)}
                   >
-                    <img src="postre.png" alt="Post request Icon" className="w-5 h-5 object-contain" />
+                    <img 
+                      src="/postre.png" 
+                      alt="Post request Icon" 
+                      className="w-5 h-5 object-contain"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = '/default-post.png';
+                      }}
+                    />
                     Post Requests
                   </Link>
                   <Link
@@ -297,17 +361,30 @@ function Header() {
                     className="flex items-center gap-3 w-full px-4 py-3 !text-white hover:bg-gray-600 transition"
                     onClick={() => setIsDropdownOpen(false)}
                   >
-                    <img src="contactus.png" alt="Contact usIcon" className="w-5 h-5 object-contain" />
+                    <img 
+                      src="/contactus.png" 
+                      alt="Contact us Icon" 
+                      className="w-5 h-5 object-contain"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = '/default-contact.png';
+                      }}
+                    />
                     Contact Us
                   </Link>
                   <button
-                    onClick={() => {
-                      handleLogout();
-                      setIsDropdownOpen(false);
-                    }}
+                    onClick={handleLogout}
                     className="flex items-center gap-3 w-full px-4 py-3 !text-white hover:bg-gray-600 transition"
                   >
-                    <img src="logout.png" alt="logout Icon" className="w-5 h-5 object-contain" />
+                    <img 
+                      src="/logout.png" 
+                      alt="logout Icon" 
+                      className="w-5 h-5 object-contain"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = '/default-logout.png';
+                      }}
+                    />
                     Log out
                   </button>
                 </div>
@@ -316,7 +393,7 @@ function Header() {
           </div>
         ) : (
           <Link to="/login">
-            <button className="bg-[#5A7FB3] hover:bg-[#147cd5] text-white px-4 py-1.5 rounded-lg text-sm whitespace-nowrap">
+            <button className="bg-[#5A7FB3] hover:bg-[#147cd5] text-white px-4 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors">
               Login / Sign up
             </button>
           </Link>
