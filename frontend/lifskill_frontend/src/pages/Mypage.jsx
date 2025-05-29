@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { ChevronDown, Bookmark, Heart, MessageCircle, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Header from './Header';
+import Footer from './Footer';
 
 function Mypage() {
   const [posts, setPosts] = useState([]);
@@ -204,7 +205,7 @@ function Mypage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-      <style jsx>{`
+      <style>{`
         .beautiful-scrollbar {
           scrollbar-width: thin;
           scrollbar-color: rgba(20, 184, 166, 0.3) transparent;
@@ -308,14 +309,14 @@ function Mypage() {
                             {post.content}
                           </p>
                           <div className="flex flex-wrap gap-2 mt-3">
-                            {Array.isArray(post.categories) && post.categories.map((category) => {
-                              const colors = categoryColors[category.categories_name] || categoryColors.default;
+                            {Array.isArray(post.categories) && post.categories.map((cat, i) => {
+                              const colors = categoryColors[cat.categories_name] || categoryColors.default;
                               return (
                                 <span
-                                  key={category.id}
+                                  key={cat.id || i}
                                   className={`${colors.bgColor} ${colors.textColor} text-xs font-medium px-2 py-0.5 rounded-full`}
                                 >
-                                  {category.categories_name}
+                                  {cat.categories_name}
                                 </span>
                               );
                             })}
@@ -432,11 +433,11 @@ function Mypage() {
                         {/* Categories */}
                         {Array.isArray(post.categories) && post.categories.length > 0 && (
                           <div className="flex flex-wrap gap-2 mt-3">
-                            {post.categories.map((category) => {
+                            {post.categories.map((category, i) => {
                               const colors = categoryColors[category.categories_name] || categoryColors.default;
                               return (
                                 <span
-                                  key={category.ID}
+                                  key={category.ID || i}
                                   className={`${colors.bgColor} ${colors.textColor} ${colors.darkBgColor} ${colors.darkTextColor} text-xs font-medium px-2.5 py-0.5 rounded-full`}
                                 >
                                   {category.categories_name}
@@ -499,6 +500,7 @@ function Mypage() {
           )}
         </div>
       </main>
+      <Footer />
     </div>
   
   );

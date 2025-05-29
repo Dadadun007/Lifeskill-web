@@ -8,6 +8,7 @@ import {
   MessageCircle,
   Loader2,
 } from 'lucide-react';
+import Footer from './Footer';
 
 function Home() {
   const [posts, setPosts] = useState([]);
@@ -422,6 +423,7 @@ function Home() {
           )}
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

@@ -83,15 +83,9 @@ const handleChangePasswordSubmit = async () => {
   // ฟังก์ชันสำหรับดึงโพสต์ของตัวเอง
   const fetchMyPosts = () => {
     fetch('http://localhost:8080/my-posts', { credentials: 'include' })
-      .then(res => {
-        if (res.status === 401) {
-          window.location.href = '/login';
-          return [];
-        }
-        return res.json();
-      })
+      .then(res => res.json())
       .then(data => {
-        setMyPosts(data);
+        setMyPosts(Array.isArray(data) ? data : []);
         console.log("myPosts data:", data);
       })
       .catch(() => setMyPosts([]));
@@ -527,7 +521,7 @@ const handleChangePasswordSubmit = async () => {
           {myPosts.length === 0 ? (
             <div className="text-center text-gray-500">No posts yet.</div>
           ) : (
-            myPosts.map((post, idx) => (
+            Array.isArray(myPosts) && myPosts.map((post, idx) => (
               <div key={post.id || idx} className="flex flex-col md:flex-row bg-white rounded-lg shadow-md p-4 relative">
                 <div className="flex flex-col justify-between flex-1">
                   <div className="flex items-center gap-2 mb-2">
@@ -560,7 +554,7 @@ const handleChangePasswordSubmit = async () => {
                     <h3 className="font-bold text-lg">{post.title || "No Title"}</h3>
                     <p className="text-sm text-gray-600">{post.content || "No Content"}</p>
                     <div className="mt-2 flex items-center gap-2 flex-wrap">
-                      <span className={`text-xs px-2 py-1 rounded-full ${post.status === 'Approve' ? 'bg-green-200 text-green-800' : post.status === 'Waiting' ? 'bg-yellow-200 text-yellow-800' : 'bg-red-200 text-red-800'}`}>{post.status}</span>
+                      <span className={`text-xs px-2 py-1 rounded-full ${post.status === 'approved' ? 'bg-green-200 text-green-800' : post.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-200 text-red-800'}`}>{post.status}</span>
                       {post.categories && post.categories.length > 0 && post.categories.some(cat => cat.categoriesName || cat.categories_name) ?
                         post.categories.map((cat, i) =>
                           (cat.categoriesName || cat.categories_name) ? (
