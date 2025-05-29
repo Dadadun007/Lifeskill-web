@@ -120,15 +120,14 @@ const Post = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/post/${id}/bookmark`, {
-        method: 'PUT',
+      const response = await fetch(`http://localhost:8080/achieve_post/${id}`, {
+        method: 'POST',
         credentials: 'include',
       });
-      if (!response.ok) throw new Error('Failed to bookmark post');
-      const data = await response.json();
-      setBookmarked(data.bookmarked);
+      if (!response.ok) throw new Error('Failed to achieve post');
+      setBookmarked(!bookmarked);
     } catch (error) {
-      console.error('Error bookmarking post:', error);
+      console.error('Error achieving post:', error);
     }
   };
 

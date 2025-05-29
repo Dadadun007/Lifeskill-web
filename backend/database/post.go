@@ -853,19 +853,29 @@ func AchievePost(db *gorm.DB) fiber.Handler {
 
 		for _, cat := range post.Categories {
 			var achievement TotalAchievement
-			err := db.Where("user_id = ? AND category_id = ?", userID, cat.ID).First(&achievement).Error
+			// Use raw SQL to ensure we're using the correct column name
+			err := db.Raw("SELECT * FROM total_achievements WHERE user_id = ? AND \"Categories_id\" = ?", userID, cat.ID).Scan(&achievement).Error
 			if err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to check achievement"})
+			}
+
+			if achievement.UserID == 0 {
 				// Not found, create new
 				achievement = TotalAchievement{
 					UserID:     userID,
 					CategoryID: cat.ID,
 					Score:      1,
 				}
-				db.Create(&achievement)
+				if err := db.Exec("INSERT INTO total_achievements (user_id, \"Categories_id\", score) VALUES (?, ?, ?)",
+					userID, cat.ID, 1).Error; err != nil {
+					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to create achievement"})
+				}
 			} else {
 				// Found, increment score
-				achievement.Score++
-				db.Save(&achievement)
+				if err := db.Exec("UPDATE total_achievements SET score = score + 1 WHERE user_id = ? AND \"Categories_id\" = ?",
+					userID, cat.ID).Error; err != nil {
+					return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update achievement"})
+				}
 			}
 		}
 
