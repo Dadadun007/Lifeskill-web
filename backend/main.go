@@ -103,7 +103,6 @@ func main() {
 	app.Get("/get_all_post", database.GetAllPosts(database.DB))
 	app.Get("/get_post_by_id/:id", database.GetPostByID(database.DB))
 	app.Get("/post/:id", database.GetPostDetails(database.DB))
-	app.Delete("/delete_posts/:id", database.DeletePost(database.DB))
 	app.Get("/search_post", database.SearchPosts(database.DB))
 	app.Get("/comments/:post_id", database.GetCommentsByPostID(database.DB))
 	app.Get("/filter_posts", database.FilterPosts(database.DB))
@@ -127,6 +126,7 @@ func main() {
 	// New post-related endpoints	
 	auth.Post("/post/:id/comment", database.AddComment(database.DB))
 	auth.Put("/post/:id/bookmark", database.ToggleBookmark(database.DB))
+	auth.Delete("/delete_posts/:id", database.DeletePost(database.DB))
 
 	auth.Put("/like_post/:id", database.LikePost(database.DB))
 	auth.Get("/my-posts", database.GetMyPosts(database.DB))

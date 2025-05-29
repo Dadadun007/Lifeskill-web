@@ -77,6 +77,8 @@ const handleChangePasswordSubmit = async () => {
   });
   const [categories, setCategories] = useState([]);
   const [myPosts, setMyPosts] = useState([]);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [postToDelete, setPostToDelete] = useState(null);
 
   // ฟังก์ชันสำหรับดึงโพสต์ของตัวเอง
   const fetchMyPosts = () => {
@@ -226,24 +228,69 @@ const handleChangePasswordSubmit = async () => {
   };
 
   const handleDeletePost = async (postId) => {
-    if (!window.confirm('Are you sure you want to delete this post?')) return;
+    setPostToDelete(postId);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!postToDelete) return;
+    
     try {
-      const res = await fetch(`http://localhost:8080/delete_posts/${postId}`, {
+      const res = await fetch(`http://localhost:8080/delete_posts/${postToDelete}`, {
         method: 'DELETE',
         credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
+      
       if (res.ok) {
         fetchMyPosts();
+        setIsDeleteConfirmOpen(false);
+        setPostToDelete(null);
       } else {
-        alert('Failed to delete post.');
+        const data = await res.json();
+        alert(data.error || 'Failed to delete post.');
       }
-    } catch {
-      alert('Server error.');
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      alert('An error occurred while deleting the post. Please try again.');
     }
+  };
+
+  const cancelDelete = () => {
+    setIsDeleteConfirmOpen(false);
+    setPostToDelete(null);
   };
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 text-black font-sans w-full overflow-x-hidden relative">
+      {/* Delete Confirmation Modal */}
+      {isDeleteConfirmOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-lg">
+            <h2 className="text-xl font-bold mb-4 text-center">Delete Post</h2>
+            <p className="text-gray-600 mb-6 text-center">
+              Are you sure you want to delete this post? This action cannot be undone.
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={confirmDelete}
+                className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-full transition-colors"
+              >
+                Delete
+              </button>
+              <button
+                onClick={cancelDelete}
+                className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-full transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Pop-up */}
       {isPopupOpen && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">

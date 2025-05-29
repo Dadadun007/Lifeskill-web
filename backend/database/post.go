@@ -260,7 +260,12 @@ func GetPostByID(db *gorm.DB) fiber.Handler {
 func DeletePost(db *gorm.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		postID := c.Params("id")
-		userID := c.Locals("userID").(uint)
+		userID, ok := c.Locals("userID").(uint)
+		if !ok {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "User not authenticated",
+			})
+		}
 
 		var post Post
 		if err := db.First(&post, postID).Error; err != nil {
