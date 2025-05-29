@@ -79,6 +79,13 @@ const handleChangePasswordSubmit = async () => {
   const [myPosts, setMyPosts] = useState([]);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [postToDelete, setPostToDelete] = useState(null);
+  const [activeTab, setActiveTab] = useState('posts');
+  const [savedPosts, setSavedPosts] = useState([]); // mock ข้อมูล savedPosts
+  const [categoriesScore, setCategoriesScore] = useState([
+    { name: 'ART', color: 'bg-blue-300', score: 80 },
+    { name: 'COOK', color: 'bg-pink-300', score: 20 },
+    { name: 'MATH', color: 'bg-yellow-200', score: 10 },
+  ]);
 
   // ฟังก์ชันสำหรับดึงโพสต์ของตัวเอง
   const fetchMyPosts = () => {
@@ -133,6 +140,24 @@ const handleChangePasswordSubmit = async () => {
   useEffect(() => {
     fetchMyPosts();
   }, []);
+
+  // mock: สมมุติว่ามี savedPosts (ถ้ายังไม่มี endpoint จริง)
+  useEffect(() => {
+    if (activeTab === 'achievement') {
+      // ตัวอย่าง mock ข้อมูล savedPosts
+      setSavedPosts([
+        {
+          id: 999,
+          title: 'Saved Post Example',
+          content: 'This is a saved post.',
+          status: 'approved',
+          categories: [{ id: 1, categories_name: 'Life Skill' }],
+          user: { username: 'OtherUser', picture: '' },
+          picture: '',
+        },
+      ]);
+    }
+  }, [activeTab]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -508,84 +533,109 @@ const handleChangePasswordSubmit = async () => {
 
         {/* Tabs */}
         <div className="flex gap-4 mb-6">
-          <button className="px-4 py-2 rounded-full bg-blue-100 text-[#5A7FB3] font-semibold">
+          <button
+            className={`px-4 py-2 rounded-full font-semibold ${activeTab === 'posts' ? 'bg-blue-100 text-[#2980b9]' : 'bg-gray-200 text-gray-800'}`}
+            onClick={() => setActiveTab('posts')}
+          >
             Your Posts
           </button>
-          <button className="px-4 py-2 rounded-full bg-gray-200 text-gray-800 font-semibold">
+          <button
+            className={`px-4 py-2 rounded-full font-semibold ${activeTab === 'achievement' ? 'bg-blue-100 text-[#2980b9]' : 'bg-gray-200 text-gray-800'}`}
+            onClick={() => setActiveTab('achievement')}
+          >
             Your Achievement
           </button>
         </div>
 
-        {/* Your Posts */}
-        <section className="flex flex-col gap-6">
-          {myPosts.length === 0 ? (
-            <div className="text-center text-gray-500">No posts yet.</div>
-          ) : (
-            Array.isArray(myPosts) && myPosts.map((post, idx) => (
-              <div key={post.id || idx} className="flex flex-col md:flex-row bg-white rounded-lg shadow-md p-4 relative">
-                <div className="flex flex-col justify-between flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <img
-                      src={
-                        post.user && post.user.picture
-                          ? (
-                              post.user.picture.startsWith('http')
-                                ? post.user.picture
-                                : post.user.picture.includes('uploads/profile_pictures/')
-                                  ? "http://localhost:8080/" + post.user.picture.replace(/^\.?\/?/, '')
-                                  : "http://localhost:8080/uploads/profile_pictures/" + encodeURIComponent(post.user.picture)
-                            )
-                          : "/default-avatar.png"
-                      }
-                      alt="Profile"
-                      className="w-8 h-8 rounded-full object-cover"
-                      onError={e => {e.target.onerror=null; e.target.src='/default-avatar.png';}}
-                    />
-                    <h4 className="font-bold text-black text-lg ">{post.user && post.user.username ? post.user.username : "Unknown"}</h4>
-                    <button
-                      onClick={() => handleDeletePost(post.id)}
-                      className="bg-[#e74c3c] rounded-full px-3 ml-2 shadow-sm text-white hover:bg-red-700 text-sm"
-                      title="Delete Post"
-                    >
-                      delete
-                    </button>
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg">{post.title || "No Title"}</h3>
-                    <p className="text-sm text-gray-600">{post.content || "No Content"}</p>
-                    <div className="mt-2 flex items-center gap-2 flex-wrap">
-                      <span className={`text-xs px-2 py-1 rounded-full ${post.status === 'approved' ? 'bg-green-200 text-green-800' : post.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-200 text-red-800'}`}>{post.status}</span>
-                      {post.categories && post.categories.length > 0 && post.categories.some(cat => cat.categoriesName || cat.categories_name) ?
-                        post.categories.map((cat, i) =>
-                          (cat.categoriesName || cat.categories_name) ? (
-                            <span key={cat.id || i} className="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded-full">
-                              {cat.categoriesName || cat.categories_name}
-                            </span>
-                          ) : null
-                        )
-                        : <span className="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded-full">No Category</span>
-                      }
+        {/* Your Posts หรือ Your Achievement */}
+        {activeTab === 'posts' ? (
+          <section className="bg-[#f2f3f4] rounded-xl shadow-md p-6 min-h-[300px]">
+            {Array.isArray(myPosts) && myPosts.length === 0 ? (
+              <div className="text-center text-gray-500">No posts</div>
+            ) : (
+              Array.isArray(myPosts) && myPosts.map((post, idx) => (
+                <div key={post.id || idx} className="flex flex-col md:flex-row bg-white rounded-lg shadow-md p-4 relative">
+                  <div className="flex flex-col justify-between flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <img
+                        src={
+                          post.user && post.user.picture
+                            ? (
+                                post.user.picture.startsWith('http')
+                                  ? post.user.picture
+                                  : post.user.picture.includes('uploads/profile_pictures/')
+                                    ? "http://localhost:8080/" + post.user.picture.replace(/^\.?\/?/, '')
+                                    : "http://localhost:8080/uploads/profile_pictures/" + encodeURIComponent(post.user.picture)
+                              )
+                            : "/default-avatar.png"
+                        }
+                        alt="Profile"
+                        className="w-8 h-8 rounded-full object-cover"
+                        onError={e => {e.target.onerror=null; e.target.src='/default-avatar.png';}}
+                      />
+                      <h4 className="font-bold text-black text-lg ">{post.user && post.user.username ? post.user.username : "Unknown"}</h4>
+                      <button
+                        onClick={() => handleDeletePost(post.id)}
+                        className="bg-[#e74c3c] rounded-full px-3 ml-2 shadow-sm text-white hover:bg-red-700 text-sm"
+                        title="Delete Post"
+                      >
+                        delete
+                      </button>
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg">{post.title || "No Title"}</h3>
+                      <p className="text-sm text-gray-600">{post.content || "No Content"}</p>
+                      <div className="mt-2 flex items-center gap-2 flex-wrap">
+                        <span className={`text-xs px-2 py-1 rounded-full ${post.status === 'approved' ? 'bg-green-200 text-green-800' : post.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-200 text-red-800'}`}>{post.status}</span>
+                        {post.categories && post.categories.length > 0 && post.categories.some(cat => cat.categoriesName || cat.categories_name) ?
+                          post.categories.map((cat, i) =>
+                            (cat.categoriesName || cat.categories_name) ? (
+                              <span key={cat.id || i} className="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded-full">
+                                {cat.categoriesName || cat.categories_name}
+                              </span>
+                            ) : null
+                          )
+                          : <span className="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded-full">No Category</span>
+                        }
+                      </div>
                     </div>
                   </div>
+                  {post.picture ? (
+                    <img
+                      src={
+                        post.picture.startsWith('http')
+                          ? post.picture
+                          : post.picture.startsWith('/')
+                            ? "http://localhost:8080" + post.picture
+                            : "http://localhost:8080/uploads/" + encodeURIComponent(post.picture)
+                      }
+                      alt="Post"
+                      className="w-full md:w-40 h-32 object-cover rounded-lg mb-4 md:mb-0 md:ml-4"
+                      onError={e => {e.target.onerror=null; e.target.src='/default-avatar.png';}}
+                    />
+                  ) : null}
                 </div>
-                {post.picture ? (
-                  <img
-                    src={
-                      post.picture.startsWith('http')
-                        ? post.picture
-                        : post.picture.startsWith('/')
-                          ? "http://localhost:8080" + post.picture
-                          : "http://localhost:8080/uploads/" + encodeURIComponent(post.picture)
-                    }
-                    alt="Post"
-                    className="w-full md:w-40 h-32 object-cover rounded-lg mb-4 md:mb-0 md:ml-4"
-                    onError={e => {e.target.onerror=null; e.target.src='/default-avatar.png';}}
-                  />
-                ) : null}
-              </div>
-            ))
-          )}
-        </section>
+              ))
+            )}
+          </section>
+        ) : (
+          <section className="bg-white rounded-xl shadow-md p-6 min-h-[300px]">
+            <div className="flex justify-between items-center mb-2 px-2">
+              <span className="font-semibold text-xl ">Categories</span>
+              <span className="font-semibold text-xl "> Your Score</span>
+            </div>
+            <div className="space-y-4">
+              {categoriesScore.map((cat, idx) => (
+                <div key={cat.name} className="flex items-center justify-between bg-gray-200 rounded-2xl shadow-sm px-4 py-3">
+                  <span className={`px-4 py-2 rounded-full text-white font-bold text-md ${cat.color}`}>{cat.name}</span>
+                  <div className="flex flex-col justify-center items-center h-full">
+                    <span className="bg-green-200 text-green-800 font-bold px-4 py-1 rounded-full text-md shadow">{cat.score}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
     </div>
   );
