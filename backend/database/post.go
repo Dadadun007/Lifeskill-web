@@ -121,6 +121,9 @@ type PostDTO struct {
 	Categories        []CategoryDTO `json:"categories"`
 	User              UserDTO       `json:"user"`
 	CreatedAt         time.Time     `json:"created_at"`
+	HasLiked          bool          `json:"has_liked"`
+	HasBookmarked     bool          `json:"has_bookmarked"`
+	Comments          []CommentDTO  `json:"comments"`
 }
 
 type CategoryDTO struct {
@@ -975,4 +978,231 @@ func RecommendPostsByAge(db *gorm.DB) fiber.Handler {
 		}
 		return c.JSON(recommended)
 	}
+}
+
+// CommentDTO represents a comment in API responses
+type CommentDTO struct {
+	ID        uint      `json:"id"`
+	Content   string    `json:"content"`
+	CreatedAt time.Time `json:"created_at"`
+	User      UserDTO   `json:"user"`
+}
+
+// Get post details with comments and user info
+func GetPostDetails(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		postID := c.Params("id")
+		userID, ok := c.Locals("userID").(uint)
+
+		var post Post
+		if err := db.Preload("User").
+			Preload("Categories").
+			Preload("Comments", func(db *gorm.DB) *gorm.DB {
+				return db.Preload("User").Order("created_at DESC")
+			}).
+			First(&post, postID).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Post not found",
+			})
+		}
+
+		// Initialize postDTO
+		postDTO := PostDTO{
+			ID:                post.ID,
+			Title:             post.Title,
+			Content:           post.Content,
+			Picture:           post.Picture,
+			RecommendAgeRange: post.RecommendAgeRange,
+			Status:            post.Status,
+			Categories:        []CategoryDTO{},
+			User: UserDTO{
+				Username: post.User.Username,
+				Picture:  post.User.Picture,
+			},
+			CreatedAt:     post.CreatedAt,
+			HasLiked:      false,
+			HasBookmarked: false,
+			Comments:      []CommentDTO{},
+		}
+
+		// Only check likes and bookmarks if user is logged in
+		if ok {
+			// Check if user has liked the post
+			var like PostLike
+			postDTO.HasLiked = db.Where("post_id = ? AND user_id = ?", postID, userID).First(&like).Error == nil
+
+			// Check if user has bookmarked the post
+			var bookmark Bookmark
+			postDTO.HasBookmarked = db.Where("post_id = ? AND user_id = ?", postID, userID).First(&bookmark).Error == nil
+		}
+
+		// Map categories
+		for _, cat := range post.Categories {
+			postDTO.Categories = append(postDTO.Categories, CategoryDTO{
+				ID:             cat.ID,
+				CategoriesName: cat.CategoriesName,
+			})
+		}
+
+		// Map comments
+		for _, comment := range post.Comments {
+			postDTO.Comments = append(postDTO.Comments, CommentDTO{
+				ID:        comment.ID,
+				Content:   comment.CommentContent,
+				CreatedAt: comment.CreatedAt,
+				User: UserDTO{
+					Username: comment.User.Username,
+					Picture:  comment.User.Picture,
+				},
+			})
+		}
+
+		return c.JSON(postDTO)
+	}
+}
+
+// Add a comment to a post
+func AddComment(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userID := c.Locals("userID").(uint)
+		postID, err := strconv.ParseUint(c.Params("id"), 10, 64)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid post ID",
+			})
+		}
+
+		var input struct {
+			Content string `json:"content"`
+		}
+
+		if err := c.BodyParser(&input); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid input",
+			})
+		}
+
+		comment := Comment{
+			CommentContent: input.Content,
+			UserID:         userID,
+			PostID:         uint(postID),
+		}
+
+		if err := db.Create(&comment).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to create comment",
+			})
+		}
+
+		// Load user info for the response
+		if err := db.Preload("User").First(&comment, comment.ID).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to load comment details",
+			})
+		}
+
+		return c.JSON(CommentDTO{
+			ID:        comment.ID,
+			Content:   comment.CommentContent,
+			CreatedAt: comment.CreatedAt,
+			User: UserDTO{
+				Username: comment.User.Username,
+				Picture:  comment.User.Picture,
+			},
+		})
+	}
+}
+
+// Toggle bookmark for a post
+func ToggleBookmark(db *gorm.DB) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		userID := c.Locals("userID").(uint)
+		postID, err := strconv.ParseUint(c.Params("id"), 10, 64)
+		if err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"error": "Invalid post ID",
+			})
+		}
+
+		// First, get the post with its categories
+		var post Post
+		if err := db.Preload("Categories").First(&post, postID).Error; err != nil {
+			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+				"error": "Post not found",
+			})
+		}
+
+		var bookmark Bookmark
+		err = db.Where("post_id = ? AND user_id = ?", postID, userID).First(&bookmark).Error
+
+		if err == nil {
+			// Bookmark exists, remove it
+			if err := db.Delete(&bookmark).Error; err != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+					"error": "Failed to remove bookmark",
+				})
+			}
+
+			// Decrement achievement scores for each category
+			for _, cat := range post.Categories {
+				var achievement TotalAchievement
+				if err := db.Where("user_id = ? AND category_id = ?", userID, cat.ID).First(&achievement).Error; err == nil {
+					if achievement.Score > 0 {
+						achievement.Score--
+						db.Save(&achievement)
+					}
+				}
+			}
+
+			return c.JSON(fiber.Map{
+				"message":    "Bookmark removed",
+				"bookmarked": false,
+			})
+		}
+
+		// Create new bookmark
+		bookmark = Bookmark{
+			UserID: userID,
+			PostID: uint(postID),
+		}
+
+		if err := db.Create(&bookmark).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "Failed to create bookmark",
+			})
+		}
+
+		// Increment achievement scores for each category
+		for _, cat := range post.Categories {
+			var achievement TotalAchievement
+			err := db.Where("user_id = ? AND category_id = ?", userID, cat.ID).First(&achievement).Error
+			if err != nil {
+				// Not found, create new
+				achievement = TotalAchievement{
+					UserID:     userID,
+					CategoryID: cat.ID,
+					Score:      1,
+				}
+				db.Create(&achievement)
+			} else {
+				// Found, increment score
+				achievement.Score++
+				db.Save(&achievement)
+			}
+		}
+
+		return c.JSON(fiber.Map{
+			"message":    "Post bookmarked",
+			"bookmarked": true,
+		})
+	}
+}
+
+// Bookmark model
+type Bookmark struct {
+	gorm.Model
+	UserID uint `gorm:"not null"`
+	PostID uint `gorm:"not null"`
+	User   User `gorm:"foreignKey:UserID;references:ID"`
+	Post   Post `gorm:"foreignKey:PostID;references:ID"`
 }

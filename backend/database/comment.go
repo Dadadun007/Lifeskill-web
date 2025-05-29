@@ -11,7 +11,8 @@ type Comment struct {
 	UserID         uint   `gorm:"not null"`
 	PostID         uint   `gorm:"not null"`
 	ParentID       *uint  `gorm:"default:null"` // For reply functionality
-
+	User           User   `gorm:"foreignKey:UserID;references:ID"`
+	Post           Post   `gorm:"foreignKey:PostID;references:ID"`
 }
 
 type CreateCommentRequest struct {
