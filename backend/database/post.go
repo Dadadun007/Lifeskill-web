@@ -183,6 +183,7 @@ func GetAllPosts(db *gorm.DB) fiber.Handler {
 				comments = append(comments, CommentDTO{
 					ID:        comment.ID,
 					Content:   comment.CommentContent,
+					ParentID:  comment.ParentID,
 					CreatedAt: comment.CreatedAt,
 					User: UserDTO{
 						Username: comment.User.Username,
@@ -509,6 +510,7 @@ func FilterPosts(db *gorm.DB) fiber.Handler {
 				comments = append(comments, CommentDTO{
 					ID:        comment.ID,
 					Content:   comment.CommentContent,
+					ParentID:  comment.ParentID,
 					CreatedAt: comment.CreatedAt,
 					User: UserDTO{
 						Username: comment.User.Username,
@@ -1030,6 +1032,7 @@ func RecommendPostsByAge(db *gorm.DB) fiber.Handler {
 type CommentDTO struct {
 	ID        uint      `json:"id"`
 	Content   string    `json:"content"`
+	ParentID  *uint     `json:"parent_id"`
 	CreatedAt time.Time `json:"created_at"`
 	User      UserDTO   `json:"user"`
 }
@@ -1069,7 +1072,7 @@ func GetPostDetails(db *gorm.DB) fiber.Handler {
 			CreatedAt:     post.CreatedAt,
 			HasLiked:      false,
 			HasBookmarked: false,
-			Like: post.Like,
+			Like:          post.Like,
 			Comments:      []CommentDTO{},
 		}
 
@@ -1097,6 +1100,7 @@ func GetPostDetails(db *gorm.DB) fiber.Handler {
 			postDTO.Comments = append(postDTO.Comments, CommentDTO{
 				ID:        comment.ID,
 				Content:   comment.CommentContent,
+				ParentID:  comment.ParentID,
 				CreatedAt: comment.CreatedAt,
 				User: UserDTO{
 					Username: comment.User.Username,
@@ -1121,7 +1125,8 @@ func AddComment(db *gorm.DB) fiber.Handler {
 		}
 
 		var input struct {
-			Content string `json:"content"`
+			Content  string `json:"content"`
+			ParentID *uint  `json:"parent_id"`
 		}
 
 		if err := c.BodyParser(&input); err != nil {
@@ -1134,6 +1139,7 @@ func AddComment(db *gorm.DB) fiber.Handler {
 			CommentContent: input.Content,
 			UserID:         userID,
 			PostID:         uint(postID),
+			ParentID:       input.ParentID,
 		}
 
 		if err := db.Create(&comment).Error; err != nil {
@@ -1152,6 +1158,7 @@ func AddComment(db *gorm.DB) fiber.Handler {
 		return c.JSON(CommentDTO{
 			ID:        comment.ID,
 			Content:   comment.CommentContent,
+			ParentID:  comment.ParentID,
 			CreatedAt: comment.CreatedAt,
 			User: UserDTO{
 				Username: comment.User.Username,
