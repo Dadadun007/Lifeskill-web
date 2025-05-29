@@ -458,17 +458,17 @@ func FilterPosts(db *gorm.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		categoryID := c.Query("category_id")
 		recommendAgeRange := c.Query("recommend_age_range")
-		sort := c.Query("sort")                           // 'mostlike' or 'recent'
-		limit, _ := strconv.Atoi(c.Query("limit", "10"))  // Default to 10 posts
-		offset, _ := strconv.Atoi(c.Query("offset", "0")) // Default to start from beginning
+		sort := c.Query("sort") // 'mostlike' or 'recent'
+		limit, _ := strconv.Atoi(c.Query("limit", "10"))
+		offset, _ := strconv.Atoi(c.Query("offset", "0"))
 
 		var posts []Post
 		query := db.Preload("User").Preload("Categories").Preload("Comments")
 
 		fmt.Println("FilterPosts - Received category_id:", categoryID)
+		fmt.Println("FilterPosts - Received sort parameter:", sort)
 
 		if categoryID != "" {
-			// Attempt to convert categoryID to an integer to ensure it's a valid ID
 			_, err := strconv.Atoi(categoryID)
 			if err != nil {
 				fmt.Println("FilterPosts - Invalid category_id received:", categoryID, "Error:", err)
@@ -480,10 +480,11 @@ func FilterPosts(db *gorm.DB) fiber.Handler {
 			query = query.Where("recommend_age_range = ?", recommendAgeRange)
 		}
 
+		// Modified sorting logic
 		if sort == "mostlike" {
-			query = query.Order("like DESC")
+			query = query.Order("posts.like DESC, posts.created_at DESC")
 		} else {
-			query = query.Order("created_at DESC")
+			query = query.Order("posts.created_at DESC")
 		}
 
 		// Add pagination
