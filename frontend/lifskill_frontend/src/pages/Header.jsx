@@ -1,7 +1,6 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react'; 
 import { useNavigate, Link } from 'react-router-dom';
-import { ChevronDown, X, Bold, Italic, Underline, List, AlignLeft, ExternalLink, Image, MoreHorizontal } from 'lucide-react';
-import Createpost from './Createpost';
+import { ChevronDown, X } from 'lucide-react';
 
 function Header() {
   const [user, setUser] = useState(null);
@@ -11,13 +10,18 @@ function Header() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Added state for popup form
+  // States for create post form
   const [postTitle, setPostTitle] = useState('');
   const [postContent, setPostContent] = useState('');
   const [selectedCategories, setSelectedCategories] = useState([]);
-  const [ageRecommend, setAgeRecommend] = useState('');
-
-  const categories = ['Foods', 'Pets', 'Travel', 'Tech', 'Health', 'Education'];
+  const [ageRecommend, setAgeRecommend] = useState('0-5');
+  const [categories, setCategories] = useState([]);
+  
+  // States for file upload and video link
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [videoLink, setVideoLink] = useState('');
+  const [filePreview, setFilePreview] = useState(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -43,6 +47,20 @@ function Header() {
   }, []);
 
   useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await fetch('http://localhost:8080/categories');
+        if (!res.ok) throw new Error('Failed to fetch categories');
+        const data = await res.json();
+        setCategories(data);
+      } catch (err) {
+        console.error(err.message);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
@@ -63,39 +81,124 @@ function Header() {
       });
       setUser(null);
       setIsDropdownOpen(false);
-      // ใช้ navigate แทน window.location.href เพื่อ replace history
       navigate("/", { replace: true });
     } catch (err) {
       console.error("Logout failed:", err);
     }
   };
 
-  // Added functions for popup
-  const toggleCategory = (category) => {
-    setSelectedCategories(prev => 
-      prev.includes(category) 
-        ? prev.filter(c => c !== category)
-        : [...prev, category]
+  const toggleCategory = (categoryId) => {
+    setSelectedCategories(prev =>
+      prev.includes(categoryId)
+        ? prev.filter(id => id !== categoryId)
+        : [...prev, categoryId]
     );
   };
 
-  const handleCreatePost = () => {
-    // Handle post creation logic here
-    console.log('Creating post:', { postTitle, postContent, selectedCategories, ageRecommend });
-    setIsCreateModalOpen(false);
-    // Reset form
+  // Handle file selection
+  const handleFileSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Check file type
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+      if (!validTypes.includes(file.type)) {
+        alert('Please select only JPG, JPEG, or PNG files');
+        return;
+      }
+      
+      // Check file size (limit to 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size should be less than 5MB');
+        return;
+      }
+      
+      setSelectedFile(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setFilePreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Remove selected file
+  const removeFile = () => {
+    setSelectedFile(null);
+    setFilePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Reset form function
+  const resetForm = () => {
     setPostTitle('');
     setPostContent('');
     setSelectedCategories([]);
-    setAgeRecommend('');
+    setAgeRecommend('0-5');
+    setVideoLink('');
+    removeFile();
   };
 
-  // Add search handler
+  // Handle create post with file upload
+  const handleCreatePost = async () => {
+    try {
+      // Validate required fields
+      if (!postTitle.trim()) {
+        alert('Please enter a post title');
+        return;
+      }
+      if (!selectedFile && !videoLink.trim()) {
+        alert('Please either upload an image or provide a video link');
+        return;
+      }
+      const postData = {
+        title: postTitle,
+        content: postContent,
+        categories: selectedCategories,
+        age_recommend: ageRecommend,
+        video_link: videoLink,
+      };
+      const formData = new FormData();
+      formData.append('post', JSON.stringify(postData));
+      if (selectedFile) {
+        formData.append('picture', selectedFile);
+      }
+      const response = await fetch('http://localhost:8080/create_post', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to create post: ${errorText}`);
+      }
+      const result = await response.json();
+      console.log('Post created successfully:', result);
+      // Reset form and close modal
+      resetForm();
+      setIsCreateModalOpen(false);
+      alert('Post created successfully!');
+    } catch (error) {
+      console.error('Error creating post:', error);
+      alert('Failed to create post. Please try again.');
+    }
+  };
+
+  // Handle search
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
+  };
+
+  // Handle modal close
+  const handleModalClose = () => {
+    resetForm();
+    setIsCreateModalOpen(false);
   };
 
   return (
@@ -135,11 +238,13 @@ function Header() {
               </button>
             </Link>
             
-            {/* ปุ่ม Create Post */}
-            <button className="bg-[#3498db] text-white font-semibold shadow-sm px-4 py-2 rounded-full text-sm hover:bg-[#2471a3] transition" onClick={() => setIsCreateModalOpen(true)}>
+            {/* Create Post Button */}
+            <button 
+              className="bg-[#3498db] text-white font-semibold shadow-sm px-4 py-2 rounded-full text-sm hover:bg-[#2471a3] transition" 
+              onClick={() => setIsCreateModalOpen(true)}
+            >
               + Create Post
             </button>
-           
 
             {/* User Info Dropdown */}
             <div className="relative w-fit" ref={dropdownRef}>
@@ -216,22 +321,17 @@ function Header() {
             </button>
           </Link>
         )}
-
-        {/* Modal Popup */}
-        {isCreateModalOpen && (
-          <Createpost onClose={() => setIsCreateModalOpen(false)} />
-        )}
       </nav>
 
-      {/* Added Create Post Modal Popup */}
+      {/* Create Post Modal */}
       {isCreateModalOpen && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-4">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-150 relative shadow-2xl">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-2xl relative shadow-2xl max-h-[90vh] overflow-y-auto">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-gray-800">Create Post</h2>
               <button 
-                onClick={() => setIsCreateModalOpen(false)}
+                onClick={handleModalClose}
                 className="text-gray-500 hover:text-gray-700 text-2xl"
               >
                 <X size={24} />
@@ -239,7 +339,7 @@ function Header() {
             </div>
 
             {/* Title Input */}
-            <div className="mb-4 ">
+            <div className="mb-4">
               <input
                 type="text"
                 placeholder="Title*"
@@ -267,60 +367,108 @@ function Header() {
 
             {/* Categories */}
             <div className="mb-4">
-              <div className="bg-gray-600 rounded-full shadow-sm px-4 py-2 mb-3">
+              <div className="bg-gray-600 rounded-xl px-4 py-2 mb-3">
                 <span className="text-white font-medium">Categories:</span>
                 <div className="flex flex-wrap gap-2 mt-2">
                   {categories.map(category => (
                     <button
-                      key={category}
-                      onClick={() => toggleCategory(category)}
+                      key={category.ID}
+                      onClick={() => toggleCategory(category.ID)}
                       className={`px-3 py-1 rounded-full text-xs font-medium transition ${
-                        selectedCategories.includes(category)
+                        selectedCategories.includes(category.ID)
                           ? 'bg-[#43A895] text-white'
                           : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                       }`}
                     >
-                      {category}
+                      {category.categories_name}
                     </button>
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Bottom Section */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {/* Import Files */}
-                <button className="bg-gray-300 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-400 transition">
-                  Import files 📎
-                </button>
-                
-                {/* Age Recommend */}
+            {/* File Upload Section */}
+            <div className="mb-4">
+                <div className="flex items-center gap-4 mb-3">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".jpg,.jpeg,.png"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    id="file-upload"
+                  />
+                  <label
+                    htmlFor="file-upload"
+                    className="bg-gray-300 text-gray-700 px-3 py-2 rounded-full text-sm hover:bg-gray-400 transition cursor-pointer flex items-center gap-2"
+                  >
+                    📎 Import files
+                  </label>
+                  <span className="text-xs text-gray-500">
+                    ไฟล์ JPG, JPEG, PNG เท่านั้น
+                  </span>
+                  {/* Age Recommend */}
                 <div className="flex items-center gap-2">
                   <span className="text-gray-600 text-sm">Age Recommend</span>
                   <select
                     value={ageRecommend}
                     onChange={(e) => setAgeRecommend(e.target.value)}
-                    className="w-15 px-1 py-1 bg-gray-100 rounded text-center text-xs border-none outline-none"
+                    className="w-20 px-2 py-1 bg-gray-100 rounded text-center text-sm border-none outline-none"
                   >
                     <option value="0-5">0-5</option>
                     <option value="6-10">6-10</option>
                     <option value="11-15">11-15</option>
                     <option value="16-19">16-19</option>
-                    <option value="20+">20+</option>
+                    <option value="20-99">20+</option>
                   </select>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-2">
-                {/* Tutorial Button */}
-               
-                   <Link to="/tutorial">
-                    <button className="bg-[#f7dc6f] text-white px-4 py-2 shadow-sm rounded-full text-sm font-medium hover:bg-[#C5A241] transition flex items-center gap-1">
-                      <img src="tutorial.png" alt="Tutorial Icon" className="w-5 h-5" /> Tutorial
+                </div>
+                
+                {/* File Preview */}
+                {filePreview && (
+                  <div className="relative inline-block">
+                    <img
+                      src={filePreview}
+                      alt="Preview"
+                      className="w-32 h-32 object-cover rounded-lg"
+                    />
+                    <button
+                      onClick={removeFile}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
+                    >
+                      ×
                     </button>
-                  </Link>
-                {/* Post Button */}
+                  </div>
+                )}
+                
+                <div className="text-xs text-gray-500 mt-2">
+                  *โพสต์จะถูกอัปโหลดไปที่ระบบหลังจากเพิ่มรูป 1 รูป
+                </div>
+        
+            </div>
+
+            {/* Video Link Section */}
+            <div className="mb-4">
+              <input
+                type="url"
+                placeholder="Link Video (Optional)"
+                value={videoLink}
+                onChange={(e) => setVideoLink(e.target.value)}
+                className="w-full px-3 py-2 bg-gray-100 rounded-lg border-none shadow-sm outline-none text-gray-700 placeholder-gray-500"
+              />
+              <span className="text-xs text-gray-500 block mt-1">
+                *กรณีเป็นวิดีโอสามารถใส่ลิงค์ได้ตรงนี้
+              </span>
+            </div>
+            {/* Action Buttons */}
+            <div className="flex justify-end">
+              <div className="flex items-center gap-2">
+                <Link to="/tutorial">
+                  <button className="bg-[#f7dc6f] text-white px-4 py-2 shadow-sm rounded-full text-sm font-medium hover:bg-[#C5A241] transition flex items-center gap-1">
+                    <img src="tutorial.png" alt="Tutorial Icon" className="w-5 h-5" /> Tutorial
+                  </button>
+                </Link>
                 <button 
                   onClick={handleCreatePost}
                   className="bg-[#45b39d] text-white px-6 py-2 shadow-sm rounded-full text-sm font-medium hover:bg-[#359182] transition"
@@ -328,11 +476,6 @@ function Header() {
                   Post
                 </button>
               </div>
-            </div>
-
-            {/* File Info */}
-            <div className="mt-3">
-              <span className="text-xs text-gray-500">*ไฟล์จะถูกอัปโหลดไปที่ระบบ หลังจาก 1 files</span>
             </div>
           </div>
         </div>
