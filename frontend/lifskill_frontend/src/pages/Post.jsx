@@ -4,6 +4,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
 
+// Helper function to extract YouTube video ID from URL
+const getYouTubeVideoId = (url) => {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
+
 const Post = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -195,6 +203,22 @@ const Post = () => {
           <div className="mb-6">
             <p className="text-gray-700 mb-2">{post.content}</p>
           </div>
+
+          {/* YouTube Video */}
+          {post.youtube_link && (
+            <div className="mb-6">
+              <div className="relative pb-[56.25%] h-0">
+                <iframe
+                  className="absolute top-0 left-0 w-full h-full rounded-lg"
+                  src={`https://www.youtube.com/embed/${getYouTubeVideoId(post.youtube_link)}`}
+                  title="YouTube video player"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              </div>
+            </div>
+          )}
 
           {/* Post Image */}
           {post.picture && (
