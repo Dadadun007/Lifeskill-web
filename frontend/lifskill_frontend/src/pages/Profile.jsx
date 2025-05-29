@@ -4,6 +4,69 @@ import Header from './Header';
 
 function Profile() {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
+
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+const [passwordData, setPasswordData] = useState({
+  oldPassword: "",
+  newPassword: "",
+  confirmPassword: "",
+});
+const [passwordError, setPasswordError] = useState("");
+const [passwordSuccess, setPasswordSuccess] = useState("");
+const [fieldErrors, setFieldErrors] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" });
+
+const handlePasswordChange = (e) => {
+  const { name, value } = e.target;
+  setPasswordData((prev) => ({ ...prev, [name]: value }));
+  setPasswordError("");
+  setPasswordSuccess("");
+  setFieldErrors((prev) => ({ ...prev, [name]: "" }));
+  if ((name === "newPassword" || name === "confirmPassword")) {
+    if (
+      (name === "newPassword" && value !== passwordData.confirmPassword && passwordData.confirmPassword !== "") ||
+      (name === "confirmPassword" && value !== passwordData.newPassword && passwordData.newPassword !== "")
+    ) {
+      setFieldErrors((prev) => ({ ...prev, confirmPassword: "New passwords do not match." }));
+    } else {
+      setFieldErrors((prev) => ({ ...prev, confirmPassword: "" }));
+    }
+  }
+};
+
+const handleChangePasswordSubmit = async () => {
+  if (passwordData.newPassword !== passwordData.confirmPassword) {
+    setFieldErrors((prev) => ({ ...prev, confirmPassword: "New passwords do not match." }));
+    return;
+  }
+  try {
+    const res = await fetch("http://localhost:8080/user/change-password", {
+      method: "PUT",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        oldPassword: passwordData.oldPassword,
+        newPassword: passwordData.newPassword,
+      }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setPasswordSuccess(data.message || "Password changed successfully.");
+      setPasswordData({ oldPassword: "", newPassword: "", confirmPassword: "" });
+      setTimeout(() => setIsChangePasswordOpen(false), 2000);
+    } else {
+      if (data.error && data.error.includes("Old password is incorrect")) {
+        setFieldErrors((prev) => ({ ...prev, oldPassword: "Old password is incorrect." }));
+      } else {
+        setPasswordError(data.error || "Failed to change password.");
+      }
+    }
+  } catch {
+    setPasswordError("Server error. Please try again.");
+  }
+};
+
   const [profileImage, setProfileImage] = useState("profile.jpg");
   const [formData, setFormData] = useState({
     username: "",
@@ -144,8 +207,9 @@ function Profile() {
     <div className="flex flex-col min-h-screen bg-gray-50 text-black font-sans w-full overflow-x-hidden relative">
       {/* Pop-up */}
       {isPopupOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 md:p-8 w-full max-w-md md:max-w-lg relative shadow-lg overflow-y-auto" style={{ maxHeight: '90vh' }}>
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 md:p-8 w-150 md-1 relative shadow-lg overflow-y-auto" style={{ maxHeight: '90vh' }}>
+             <h2 className="text-xl font-bold mb-2 text-center">Edit Profile</h2>
             <div className="flex flex-col items-center gap-4">
               {/* รูปโปรไฟล์ */}
               <div className="relative flex flex-col items-center">
@@ -163,7 +227,7 @@ function Profile() {
                 />
                 <label
                   htmlFor="profile-upload"
-                  className="mt-2 text-gray-500 text-sm cursor-pointer hover:underline"
+                  className="mt-2 bg-white shadow-sm px-2 rounded-lg text-gray-900 text-sm cursor-pointer hover:underline"
                   style={{ color: "#888" }}
                 >
                   Upload Profile
@@ -264,6 +328,67 @@ function Profile() {
           </div>
         </div>
       )}
+      {/* Pop-up Change Password */}
+        {isChangePasswordOpen && (
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-lg">
+              <h2 className="text-xl font-bold mb-5 text-center">Change Password</h2>
+              <div className="space-y-3">
+                <div className="mb-2">
+                <label className="block text-sm font-semibold mb-1">Current Password</label>
+                <input
+                  type="password"
+                  name="oldPassword"
+                  value={passwordData.oldPassword}
+                  onChange={handlePasswordChange}
+                  placeholder="Current Password"
+                  className="w-full px-3 py-2 bg-gray-100 rounded-lg border-none shadow-sm outline-none text-gray-800 placeholder-gray-800"
+                />
+                {fieldErrors.oldPassword && <p className="text-red-500 text-sm mt-1">{fieldErrors.oldPassword}</p>}
+                </div>
+                <div className="mb-2">
+                <label className="block text-sm font-semibold mb-1">New Password</label>
+                <input
+                  type="password"
+                  name="newPassword"
+                  value={passwordData.newPassword}
+                  onChange={handlePasswordChange}
+                  placeholder="New Password"
+                  className="w-full px-3 py-2 bg-gray-100 rounded-lg border-none shadow-sm outline-none text-gray-800 placeholder-gray-800"
+                />
+                </div>
+                <div className="mb-2">
+                  <label className="block text-sm font-semibold mb-1">Confirm Password</label>
+                <input
+                  type="password"
+                  name="confirmPassword"
+                  value={passwordData.confirmPassword}
+                  onChange={handlePasswordChange}
+                  placeholder="Confirm New Password"
+                  className="w-full px-3 py-2 bg-gray-100 rounded-lg border-none shadow-sm outline-none text-gray-800 placeholder-gray-800"
+                />
+                {fieldErrors.confirmPassword && <p className="text-red-500 text-sm mt-1">{fieldErrors.confirmPassword}</p>}
+                </div>
+                {passwordError && <p className="text-red-500 text-sm text-center">{passwordError}</p>}
+                {passwordSuccess && <p className="text-green-500 text-sm text-center">{passwordSuccess}</p>}
+              </div>
+              <div className="flex justify-center gap-2 mt-4">
+                <button
+                  onClick={handleChangePasswordSubmit}
+                  className="bg-[#43A895] hover:bg-[#2e7b6b] shadow-sm text-white px-4 py-2 rounded-full"
+                >
+                  Confirm
+                </button>
+                 <button
+                  onClick={() => setIsChangePasswordOpen(false)}
+                  className="bg-gray-400 hover:bg-gray-500 shadow-sm text-white px-4 py-2 rounded-full"
+                >
+                  Cancel
+                </button>                                
+              </div>
+            </div>
+          </div>
+        )}
 
          <Header />
 
@@ -292,7 +417,10 @@ function Profile() {
             >
               Edit Profile
             </button>
-            <button className="bg-[#43A895] hover:bg-[#2e7b6b] shadow-sm text-white px-5 py-2 rounded-full">
+            <button
+              onClick={() => setIsChangePasswordOpen(true)}
+              className="bg-[#43A895] hover:bg-[#2e7b6b] shadow-sm text-white px-5 py-2 rounded-full"
+            >
               Change Password
             </button>
           </div>
