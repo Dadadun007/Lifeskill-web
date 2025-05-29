@@ -168,8 +168,8 @@ function Header() {
         title: postTitle,
         content: postContent,
         categories: selectedCategories,
-        age_recommend: ageRecommend,
-        YouTubeLink: videoLink,
+        recommend_age_range: ageRecommend,
+        youtube_link: videoLink,
       };
       const formData = new FormData();
       formData.append('post', JSON.stringify(postData));

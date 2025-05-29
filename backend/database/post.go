@@ -128,6 +128,7 @@ type PostDTO struct {
 	HasLiked          bool          `json:"has_liked"`
 	HasBookmarked     bool          `json:"has_bookmarked"`
 	Comments          []CommentDTO  `json:"comments"`
+	Like              int           `json:"like"`
 }
 
 type CategoryDTO struct {
@@ -156,6 +157,7 @@ func GetAllPosts(db *gorm.DB) fiber.Handler {
 
 		if err := db.Preload("User").
 			Preload("Categories").
+			Preload("Comments").
 			Limit(limit).
 			Offset(offset).
 			Order("created_at desc").
@@ -176,6 +178,19 @@ func GetAllPosts(db *gorm.DB) fiber.Handler {
 				})
 			}
 
+			var comments []CommentDTO
+			for _, comment := range post.Comments {
+				comments = append(comments, CommentDTO{
+					ID:        comment.ID,
+					Content:   comment.CommentContent,
+					CreatedAt: comment.CreatedAt,
+					User: UserDTO{
+						Username: comment.User.Username,
+						Picture:  comment.User.Picture,
+					},
+				})
+			}
+
 			postDTO := PostDTO{
 				ID:                post.ID,
 				Title:             post.Title,
@@ -190,6 +205,8 @@ func GetAllPosts(db *gorm.DB) fiber.Handler {
 					Picture:  post.User.Picture,
 				},
 				CreatedAt: post.CreatedAt,
+				Like:      post.Like,
+				Comments:  comments,
 			}
 			postDTOs = append(postDTOs, postDTO)
 		}
@@ -443,7 +460,7 @@ func FilterPosts(db *gorm.DB) fiber.Handler {
 		sort := c.Query("sort") // 'mostlike' or 'recent'
 
 		var posts []Post
-		query := db.Preload("User").Preload("Categories")
+		query := db.Preload("User").Preload("Categories").Preload("Comments")
 
 		fmt.Println("FilterPosts - Received category_id:", categoryID)
 
@@ -486,6 +503,20 @@ func FilterPosts(db *gorm.DB) fiber.Handler {
 					CategoriesName: cat.CategoriesName,
 				})
 			}
+
+			var comments []CommentDTO
+			for _, comment := range post.Comments {
+				comments = append(comments, CommentDTO{
+					ID:        comment.ID,
+					Content:   comment.CommentContent,
+					CreatedAt: comment.CreatedAt,
+					User: UserDTO{
+						Username: comment.User.Username,
+						Picture:  comment.User.Picture,
+					},
+				})
+			}
+
 			postDTO := PostDTO{
 				ID:                post.ID,
 				Title:             post.Title,
@@ -500,6 +531,8 @@ func FilterPosts(db *gorm.DB) fiber.Handler {
 					Picture:  post.User.Picture,
 				},
 				CreatedAt: post.CreatedAt,
+				Like:      post.Like,
+				Comments:  comments,
 			}
 			postDTOs = append(postDTOs, postDTO)
 		}
@@ -1036,6 +1069,7 @@ func GetPostDetails(db *gorm.DB) fiber.Handler {
 			CreatedAt:     post.CreatedAt,
 			HasLiked:      false,
 			HasBookmarked: false,
+			Like: post.Like,
 			Comments:      []CommentDTO{},
 		}
 

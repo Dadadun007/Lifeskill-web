@@ -329,11 +329,6 @@ function Home() {
                           <MessageCircle className="w-4 h-4" />
                           <span className="font-medium">{post.comments?.length || 0} comments</span>
                         </div>
-                        {/* Approvals - Kept for potential future use */}
-                        {/* <div className="flex items-center gap-2 text-amber-500 hover:text-amber-600 cursor-pointer transition-colors">
-                          <Bookmark className="w-4 h-4" />
-                          <span className="font-medium">{post.approved_users || 0} approvals</span>
-                        </div> */}
                       </div>
                     </div>
 

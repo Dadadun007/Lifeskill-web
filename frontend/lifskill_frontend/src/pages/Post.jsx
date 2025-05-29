@@ -30,8 +30,15 @@ const Post = () => {
         const res = await fetch('http://localhost:8080/user/me', {
           credentials: 'include',
         });
-        setIsLoggedIn(res.ok);
+        if (res.ok) {
+          const userData = await res.json();
+          setIsLoggedIn(true);
+          // Store user data in state if needed
+        } else {
+          setIsLoggedIn(false);
+        }
       } catch (err) {
+        console.error('Auth check error:', err);
         setIsLoggedIn(false);
       }
     };
@@ -55,6 +62,7 @@ const Post = () => {
         }
         
         const data = await response.json();
+        console.log('Post data:', data); // Debug log
         setPost(data);
         if (isLoggedIn) {
           setLiked(data.has_liked);
@@ -86,7 +94,7 @@ const Post = () => {
       if (!response.ok) throw new Error('Failed to like post');
       const data = await response.json();
       setLiked(!liked);
-      setPost(prev => ({ ...prev, like: data.likes }));
+      setPost(prev => ({ ...prev, like: data.like })); // Update to use 'like' instead of 'likes'
     } catch (error) {
       console.error('Error liking post:', error);
     }
@@ -179,7 +187,7 @@ const Post = () => {
           {/* Post Owner Details */}
           <div className="flex items-start space-x-3 mb-6">
             <img 
-              src={post.user?.picture ? `http://localhost:8080/${post.user.picture}` : '/api/placeholder/40/40'} 
+              src={post.user?.picture ? `http://localhost:8080/${post.user.picture}` : 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
               alt="Post owner avatar" 
               className="w-12 h-12 rounded-full bg-gray-300 flex-shrink-0"
             />
@@ -241,7 +249,7 @@ const Post = () => {
                 title={!isLoggedIn ? "Please login to like posts" : ""}
               >
                 <Heart className={`w-5 h-5 ${liked ? 'fill-current' : ''}`} />
-                <span className="text-sm font-medium">{post.like}</span>
+                <span className="text-sm font-medium">{post.like || 0}</span>
               </button>
               
               <button 
@@ -249,7 +257,7 @@ const Post = () => {
                 title={!isLoggedIn ? "Please login to comment" : ""}
               >
                 <MessageCircle className="w-5 h-5" />
-                <span className="text-sm font-medium">{comments.length}</span>
+                <span className="text-sm font-medium">{post.comments?.length || 0}</span>
               </button>
               
               <button className="text-gray-600 hover:text-green-500">
@@ -271,7 +279,7 @@ const Post = () => {
             <div className="py-4 border-b border-gray-200">
               <div className="flex space-x-3">
                 <img 
-                  src="/api/placeholder/32/32" 
+                  src="https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y" 
                   alt="Your avatar" 
                   className="w-8 h-8 rounded-full bg-gray-300 flex-shrink-0"
                 />
@@ -308,7 +316,7 @@ const Post = () => {
               <div key={comment.id} className="mb-6">
                 <div className="flex space-x-3">
                   <img 
-                    src={comment.user?.picture ? `http://localhost:8080/${comment.user.picture}` : '/api/placeholder/32/32'} 
+                    src={comment.user?.picture ? `http://localhost:8080/uploads/${comment.user.picture}` : 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'} 
                     alt={comment.user?.username || 'User'}
                     className="w-8 h-8 rounded-full bg-gray-300 flex-shrink-0"
                   />
