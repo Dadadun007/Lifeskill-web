@@ -500,36 +500,49 @@ const handleChangePasswordSubmit = async () => {
       {/* Profile Section */}
       <main className="flex-1 px-4 md:px-6 w-full max-w-screen-lg mx-auto mt-8">
         {/* User Info */}
-        <section className="bg-white shadow-md rounded-xl p-6 mb-8 relative">
-          <div className="flex flex-col md:flex-row items-center gap-6">
-            <img src={profileImage} alt="Profile" className="w-32 h-32 rounded-full object-cover" />
-            <div className="flex-1 space-y-2 text-center md:text-left">
-              <h1 className="text-2xl font-bold">{formData.username}</h1>
-              <p>Email : {formData.email}</p>
-              <p>Age : {formData.age}</p>
-              <p>Gender : {formData.gender}</p>
-              <p>Talents : {formData.talents.map((t, i) => (
-                <span key={i} className="bg-gray-200 rounded-full px-2 py-1 mx-1 text-sm">{t}</span>
-              ))}</p>
-            </div>
-          </div>
+       <section className="bg-white shadow-md rounded-xl p-6 mb-8">
+  <div className="flex flex-col md:flex-row items-center gap-6">
+    <img
+      src={profileImage}
+      alt="Profile"
+      className="w-32 h-32 rounded-full object-cover"
+    />
+    <div className="flex-1 space-y-2 text-center md:text-left">
+      <h1 className="text-2xl font-bold">{formData.username}</h1>
+      <p>Email : {formData.email}</p>
+      <p>Age : {formData.age}</p>
+      <p>Gender : {formData.gender}</p>
+      <p>
+        Talents :
+        {formData.talents.map((t, i) => (
+          <span
+            key={i}
+            className="bg-gray-200 rounded-full px-2 py-1 mx-1 text-sm inline-block"
+          >
+            {t}
+          </span>
+        ))}
+      </p>
+    </div>
+  </div>
 
-          {/* ปุ่ม Edit และ Change Password */}
-          <div className="absolute bottom-6 right-6 flex flex-col md:flex-row gap-2">
-            <button
-              onClick={() => setIsPopupOpen(true)}
-              className="bg-[#3498db] hover:bg-[#476799] shadow-sm text-white px-6 py-2 rounded-full"
-            >
-              Edit Profile
-            </button>
-            <button
-              onClick={() => setIsChangePasswordOpen(true)}
-              className="bg-[#43A895] hover:bg-[#2e7b6b] shadow-sm text-white px-5 py-2 rounded-full"
-            >
-              Change Password
-            </button>
-          </div>
-        </section>
+  {/* ปุ่ม Edit และ Change Password */}
+  <div className="flex flex-col md:flex-row gap-2 mt-2 justify-center md:justify-end">
+    <button
+      onClick={() => setIsPopupOpen(true)}
+      className="bg-[#3498db] hover:bg-[#476799] shadow-sm text-white px-6 py-2 rounded-full"
+    >
+      Edit Profile
+    </button>
+    <button
+      onClick={() => setIsChangePasswordOpen(true)}
+      className="bg-[#43A895] hover:bg-[#2e7b6b] shadow-sm text-white px-5 py-2 rounded-full"
+    >
+      Change Password
+    </button>
+  </div>
+</section>
+
 
         {/* Tabs */}
         <div className="flex gap-4 mb-6">
