@@ -16,7 +16,6 @@ type Post struct {
 	Title             string `gorm:"size:150;not null"`
 	Content           string `gorm:"type:text;not null"`
 	Picture           string `gorm:"size:255"`
-	VideoLink         string `gorm:"size:255"`
 	Like              int    `gorm:"default:0"`
 	RecommendAgeRange string `gorm:"size:50;column:recommend_age_range"`
 	Status            string `gorm:"size:20;default:'pending'"`
@@ -44,7 +43,6 @@ type CreatePostRequest struct {
 	Content           string `json:"content"`
 	RecommendAgeRange string `json:"RecommendAgeRange"`
 	Categories        []uint `json:"Categories"`
-	VideoLink         string `json:"videoLink"`
 }
 
 func CreatePost(db *gorm.DB, c *fiber.Ctx) error {
@@ -88,7 +86,6 @@ func CreatePost(db *gorm.DB, c *fiber.Ctx) error {
 		Title:             postData.Title,
 		Content:           postData.Content,
 		Picture:           file.Filename,
-		VideoLink:         postData.VideoLink,
 		RecommendAgeRange: postData.RecommendAgeRange,
 		Status:            "pending",
 		ApprovedUsers:     0,
@@ -119,7 +116,6 @@ type PostDTO struct {
 	Title             string        `json:"title"`
 	Content           string        `json:"content"`
 	Picture           string        `json:"picture"`
-	VideoLink         string        `json:"videoLink"`
 	RecommendAgeRange string        `json:"recommend_age_range"`
 	Status            string        `json:"status"`
 	Categories        []CategoryDTO `json:"categories"`
@@ -178,7 +174,6 @@ func GetAllPosts(db *gorm.DB) fiber.Handler {
 				Title:             post.Title,
 				Content:           post.Content,
 				Picture:           post.Picture,
-				VideoLink:         post.VideoLink,
 				RecommendAgeRange: post.RecommendAgeRange,
 				Status:            post.Status,
 				Categories:        categories,
@@ -221,7 +216,6 @@ func GetPostByID(db *gorm.DB) fiber.Handler {
 			Title:             post.Title,
 			Content:           post.Content,
 			Picture:           post.Picture,
-			VideoLink:         post.VideoLink,
 			RecommendAgeRange: post.RecommendAgeRange,
 			Status:            post.Status,
 			Categories:        categories,
@@ -314,7 +308,6 @@ func SearchPosts(db *gorm.DB) fiber.Handler {
 				Title:             post.Title,
 				Content:           post.Content,
 				Picture:           post.Picture,
-				VideoLink:         post.VideoLink,
 				RecommendAgeRange: post.RecommendAgeRange,
 				Status:            post.Status,
 				Categories:        categories,
@@ -415,7 +408,6 @@ func GetMyPosts(db *gorm.DB) fiber.Handler {
 				Title:             post.Title,
 				Content:           post.Content,
 				Picture:           post.Picture,
-				VideoLink:         post.VideoLink,
 				RecommendAgeRange: post.RecommendAgeRange,
 				Status:            post.Status,
 				Categories:        categories,
@@ -488,7 +480,6 @@ func FilterPosts(db *gorm.DB) fiber.Handler {
 				Title:             post.Title,
 				Content:           post.Content,
 				Picture:           post.Picture,
-				VideoLink:         post.VideoLink,
 				RecommendAgeRange: post.RecommendAgeRange,
 				Status:            post.Status,
 				Categories:        categories,
@@ -589,7 +580,6 @@ func GetApprovedPosts(db *gorm.DB) fiber.Handler {
 				Title:             post.Title,
 				Content:           post.Content,
 				Picture:           post.Picture,
-				VideoLink:         post.VideoLink,
 				RecommendAgeRange: post.RecommendAgeRange,
 				Status:            post.Status,
 				Categories:        categories,
@@ -785,7 +775,6 @@ func GetPendingPostsForExpert(db *gorm.DB) fiber.Handler {
 				Title:             post.Title,
 				Content:           post.Content,
 				Picture:           post.Picture,
-				VideoLink:         post.VideoLink,
 				RecommendAgeRange: post.RecommendAgeRange,
 				Status:            post.Status,
 				Categories:        categories,
@@ -906,7 +895,6 @@ func GetMyAchievedPosts(db *gorm.DB) fiber.Handler {
 				Title:             post.Title,
 				Content:           post.Content,
 				Picture:           post.Picture,
-				VideoLink:         post.VideoLink,
 				RecommendAgeRange: post.RecommendAgeRange,
 				Status:            post.Status,
 				Categories:        categories,
@@ -972,7 +960,6 @@ func RecommendPostsByAge(db *gorm.DB) fiber.Handler {
 						Title:             post.Title,
 						Content:           post.Content,
 						Picture:           post.Picture,
-						VideoLink:         post.VideoLink,
 						RecommendAgeRange: post.RecommendAgeRange,
 						Status:            post.Status,
 						Categories:        categories,
