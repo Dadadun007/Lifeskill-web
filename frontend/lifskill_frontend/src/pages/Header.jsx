@@ -169,7 +169,7 @@ function Header() {
         content: postContent,
         categories: selectedCategories,
         age_recommend: ageRecommend,
-        video_link: videoLink,
+        YouTubeLink: videoLink,
       };
       const formData = new FormData();
       formData.append('post', JSON.stringify(postData));
@@ -529,7 +529,7 @@ function Header() {
             <div className="mb-4">
               <input
                 type="url"
-                placeholder="Link Video (Optional)"
+                placeholder="Link Youtube Video (Optional)"
                 value={videoLink}
                 onChange={(e) => setVideoLink(e.target.value)}
                 className="w-full px-3 py-2 bg-gray-100 rounded-lg border-none shadow-sm outline-none text-gray-700 placeholder-gray-500"

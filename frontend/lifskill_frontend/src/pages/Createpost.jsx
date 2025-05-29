@@ -90,7 +90,7 @@ function Header() {
       const postData = {
         title: postTitle,
         content: postContent,
-        categories: selectedCategories.join(","),
+        categories: selectedCategories,
         age_recommend: ageRecommend,
         video_link: videoLink,
       };
