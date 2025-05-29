@@ -122,11 +122,11 @@ const handleChangePasswordSubmit = async () => {
           }
           setProfileImage(picPath);
         } else {
-          setProfileImage("/default-profile.png"); // fallback
+          setProfileImage("/default-avatar.png"); // fallback
         }
         localStorage.setItem('user', JSON.stringify(user));
       })
-      .catch(() => setProfileImage("/default-profile.png"));
+      .catch(() => setProfileImage("/default-avatar.png"));
   }, []);
 
   useEffect(() => {
@@ -216,11 +216,11 @@ const handleChangePasswordSubmit = async () => {
           }
           setProfileImage(picPath);
         } else {
-          setProfileImage("/default-profile.png");
+          setProfileImage("/default-avatar.png");
         }
         localStorage.setItem('user', JSON.stringify(user));
       })
-      .catch(() => setProfileImage("/default-profile.png"));
+      .catch(() => setProfileImage("/default-avatar.png"));
   };
 
   const handleCancel = () => {
@@ -541,11 +541,11 @@ const handleChangePasswordSubmit = async () => {
                                   ? "http://localhost:8080/" + post.user.picture.replace(/^\.?\/?/, '')
                                   : "http://localhost:8080/uploads/profile_pictures/" + encodeURIComponent(post.user.picture)
                             )
-                          : "/default-profile.png"
+                          : "/default-avatar.png"
                       }
                       alt="Profile"
                       className="w-8 h-8 rounded-full object-cover"
-                      onError={e => {e.target.onerror=null; e.target.src='/default-profile.png';}}
+                      onError={e => {e.target.onerror=null; e.target.src='/default-avatar.png';}}
                     />
                     <h4 className="font-bold text-black text-lg ">{post.user && post.user.username ? post.user.username : "Unknown"}</h4>
                     <button
@@ -585,7 +585,7 @@ const handleChangePasswordSubmit = async () => {
                     }
                     alt="Post"
                     className="w-full md:w-40 h-32 object-cover rounded-lg mb-4 md:mb-0 md:ml-4"
-                    onError={e => {e.target.onerror=null; e.target.src='/default-profile.png';}}
+                    onError={e => {e.target.onerror=null; e.target.src='/default-avatar.png';}}
                   />
                 ) : null}
               </div>
