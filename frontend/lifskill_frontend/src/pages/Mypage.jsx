@@ -13,6 +13,9 @@ function Mypage() {
   const [userAge, setUserAge] = useState(null);
   const [isLoadingRecommended, setIsLoadingRecommended] = useState(true);
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
+  const [offset, setOffset] = useState(0);
+  const [totalPosts, setTotalPosts] = useState(0);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // Define category color mapping
   const categoryColors = {
@@ -88,7 +91,7 @@ function Mypage() {
 
   useEffect(() => {
     const fetchAllPosts = async () => {
-      setIsLoadingPosts(true); // Set loading for the main posts feed
+      setIsLoadingPosts(true);
       try {
         let url = 'http://localhost:8080/filter_posts?';
         const params = new URLSearchParams();
@@ -100,6 +103,10 @@ function Mypage() {
         if (typeof selectedCategory === 'number') {
           params.append('category_id', selectedCategory.toString());
         }
+
+        // Add pagination parameters
+        params.append('limit', '10');
+        params.append('offset', '0');
 
         url += params.toString();
 
@@ -118,19 +125,62 @@ function Mypage() {
 
         const data = await res.json();
         console.log('Fetched ALL posts data:', data);
-        setPosts(data || []);
+        setPosts(data.posts);
+        setTotalPosts(data.total);
+        setOffset(10); // Reset offset for next load
 
       } catch (error) {
         console.error('Error during fetch or processing ALL posts:', error);
-        setPosts([]); // Clear posts on error
+        setPosts([]);
+        setTotalPosts(0);
       } finally {
-        setIsLoadingPosts(false); // Stop loading for the main posts feed
+        setIsLoadingPosts(false);
       }
     };
 
     fetchAllPosts();
 
   }, [sortOrder, selectedCategory]);
+
+  const loadMorePosts = () => {
+    if (isLoadingMore || posts.length >= totalPosts) return;
+
+    setIsLoadingMore(true);
+    let url = 'http://localhost:8080/filter_posts?';
+    
+    const params = new URLSearchParams();
+
+    if (sortOrder && sortOrder !== 'recent') {
+      params.append('sort', sortOrder);
+    }
+    
+    if (typeof selectedCategory === 'number') {
+      params.append('category_id', selectedCategory.toString());
+    }
+
+    params.append('limit', '10');
+    params.append('offset', offset.toString());
+
+    url += params.toString();
+
+    fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        setPosts(prevPosts => [...prevPosts, ...data.posts]);
+        setOffset(prevOffset => prevOffset + 10);
+        setIsLoadingMore(false);
+      })
+      .catch((error) => {
+        console.error('Error loading more posts:', error);
+        setIsLoadingMore(false);
+      });
+  };
 
   const handleSortClick = (order) => {
     setSortOrder(order);
@@ -429,9 +479,24 @@ function Mypage() {
 
         {/* Load More */}
         <div className="text-center mt-12">
-          <button className="bg-white border-2 border-gray-200 text-gray-700 px-8 py-3 rounded-xl hover:border-teal-500 hover:text-teal-600 transition-all shadow-sm hover:shadow-md">
-            See more posts
-          </button>
+          {posts.length < totalPosts && (
+            <button 
+              onClick={loadMorePosts}
+              disabled={isLoadingMore}
+              className={`bg-white border-2 border-gray-200 text-gray-700 px-8 py-3 rounded-xl hover:border-teal-500 hover:text-teal-600 transition-all shadow-sm hover:shadow-md ${
+                isLoadingMore ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              {isLoadingMore ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading...
+                </span>
+              ) : (
+                'See more posts'
+              )}
+            </button>
+          )}
         </div>
       </main>
     </div>

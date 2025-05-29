@@ -6,6 +6,7 @@ import {
   Bookmark,
   Heart,
   MessageCircle,
+  Loader2,
 } from 'lucide-react';
 
 function Home() {
@@ -15,6 +16,9 @@ function Home() {
   const [sortOrder, setSortOrder] = useState('recent'); // State for sort order: 'recent' or 'mostlike'
   const [selectedCategory, setSelectedCategory] = useState(null); // State for selected category ID
   const [showCategories, setShowCategories] = useState(false); // State to toggle category dropdown
+  const [offset, setOffset] = useState(0);
+  const [totalPosts, setTotalPosts] = useState(0);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // Define category color mapping
   const categoryColors = {
@@ -61,10 +65,13 @@ function Home() {
       params.append('sort', sortOrder);
     }
     
-    // Explicitly check if selectedCategory is a number (i.e., a valid category ID)
     if (typeof selectedCategory === 'number') {
       params.append('category_id', selectedCategory.toString());
     }
+
+    // Add pagination parameters
+    params.append('limit', '10');
+    params.append('offset', '0');
 
     url += params.toString();
 
@@ -84,14 +91,57 @@ function Home() {
       })
       .then((data) => {
         console.log('Fetched posts data:', data);
-        setPosts(data);
+        setPosts(data.posts);
+        setTotalPosts(data.total);
+        setOffset(10); // Reset offset for next load
       })
       .catch((error) => {
         console.error('Error during fetch or processing:', error);
-        setPosts([]); // Clear posts on error
+        setPosts([]);
+        setTotalPosts(0);
       });
 
   }, [sortOrder, selectedCategory]); // Rerun when sortOrder or selectedCategory changes
+
+  const loadMorePosts = () => {
+    if (isLoadingMore || posts.length >= totalPosts) return;
+
+    setIsLoadingMore(true);
+    let url = 'http://localhost:8080/filter_posts?';
+    
+    const params = new URLSearchParams();
+
+    if (sortOrder && sortOrder !== 'recent') {
+      params.append('sort', sortOrder);
+    }
+    
+    if (typeof selectedCategory === 'number') {
+      params.append('category_id', selectedCategory.toString());
+    }
+
+    params.append('limit', '10');
+    params.append('offset', offset.toString());
+
+    url += params.toString();
+
+    fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        setPosts(prevPosts => [...prevPosts, ...data.posts]);
+        setOffset(prevOffset => prevOffset + 10);
+        setIsLoadingMore(false);
+      })
+      .catch((error) => {
+        console.error('Error loading more posts:', error);
+        setIsLoadingMore(false);
+      });
+  };
 
   const handleCategoryClick = (categoryId) => {
     console.log('Category clicked, setting selectedCategory to:', categoryId);
@@ -352,9 +402,24 @@ function Home() {
 
         {/* Load More */}
         <div className="text-center mt-12">
-          <button className="bg-white border-2 border-gray-200 text-gray-700 px-8 py-3 rounded-xl hover:border-teal-500 hover:text-teal-600 transition-all shadow-sm hover:shadow-md">
-            See more posts
-          </button>
+          {posts.length < totalPosts && (
+            <button 
+              onClick={loadMorePosts}
+              disabled={isLoadingMore}
+              className={`bg-white border-2 border-gray-200 text-gray-700 px-8 py-3 rounded-xl hover:border-teal-500 hover:text-teal-600 transition-all shadow-sm hover:shadow-md ${
+                isLoadingMore ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              {isLoadingMore ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading...
+                </span>
+              ) : (
+                'See more posts'
+              )}
+            </button>
+          )}
         </div>
       </main>
     </div>

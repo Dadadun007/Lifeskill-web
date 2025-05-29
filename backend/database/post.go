@@ -458,7 +458,9 @@ func FilterPosts(db *gorm.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		categoryID := c.Query("category_id")
 		recommendAgeRange := c.Query("recommend_age_range")
-		sort := c.Query("sort") // 'mostlike' or 'recent'
+		sort := c.Query("sort")                           // 'mostlike' or 'recent'
+		limit, _ := strconv.Atoi(c.Query("limit", "10"))  // Default to 10 posts
+		offset, _ := strconv.Atoi(c.Query("offset", "0")) // Default to start from beginning
 
 		var posts []Post
 		query := db.Preload("User").Preload("Categories").Preload("Comments")
@@ -469,11 +471,7 @@ func FilterPosts(db *gorm.DB) fiber.Handler {
 			// Attempt to convert categoryID to an integer to ensure it's a valid ID
 			_, err := strconv.Atoi(categoryID)
 			if err != nil {
-				// Log invalid categoryID and return an error or skip filtering
 				fmt.Println("FilterPosts - Invalid category_id received:", categoryID, "Error:", err)
-				// Optionally, return an error to the frontend:
-				// return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "Invalid category ID format"})
-				// For now, we'll just skip the category filter for invalid IDs
 			} else {
 				query = query.Joins("JOIN post_categories pc ON pc.post_id = posts.id").Where("pc.category_id = ?", categoryID)
 			}
@@ -488,11 +486,25 @@ func FilterPosts(db *gorm.DB) fiber.Handler {
 			query = query.Order("created_at DESC")
 		}
 
+		// Add pagination
+		query = query.Limit(limit).Offset(offset)
+
 		if err := query.Find(&posts).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "Failed to filter posts",
 			})
 		}
+
+		// Get total count for pagination
+		var total int64
+		countQuery := db.Model(&Post{})
+		if categoryID != "" {
+			countQuery = countQuery.Joins("JOIN post_categories pc ON pc.post_id = posts.id").Where("pc.category_id = ?", categoryID)
+		}
+		if recommendAgeRange != "" {
+			countQuery = countQuery.Where("recommend_age_range = ?", recommendAgeRange)
+		}
+		countQuery.Count(&total)
 
 		// Map to DTOs
 		var postDTOs []PostDTO
@@ -539,7 +551,10 @@ func FilterPosts(db *gorm.DB) fiber.Handler {
 			postDTOs = append(postDTOs, postDTO)
 		}
 
-		return c.JSON(postDTOs)
+		return c.JSON(fiber.Map{
+			"posts": postDTOs,
+			"total": total,
+		})
 	}
 }
 
