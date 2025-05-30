@@ -82,11 +82,7 @@ const handleChangePasswordSubmit = async () => {
   const [postToDelete, setPostToDelete] = useState(null);
   const [activeTab, setActiveTab] = useState('posts');
   const [savedPosts, setSavedPosts] = useState([]); // mock ข้อมูล savedPosts
-  const [categoriesScore, setCategoriesScore] = useState([
-    { name: 'ART', color: 'bg-blue-300', score: 80 },
-    { name: 'COOK', color: 'bg-pink-300', score: 20 },
-    { name: 'MATH', color: 'bg-yellow-200', score: 10 },
-  ]);
+  const [categoriesScore, setCategoriesScore] = useState([]);
 
   // ฟังก์ชันสำหรับดึงโพสต์ของตัวเอง
   const fetchMyPosts = () => {
@@ -159,6 +155,38 @@ const handleChangePasswordSubmit = async () => {
       ]);
     }
   }, [activeTab]);
+
+  useEffect(() => {
+  fetch('http://localhost:8080/my_achievements', {
+    credentials: 'include',
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      const colorPalette = [
+        'shadow-sm bg-blue-400',
+        'shadow-sm bg-pink-400',
+        'shadow-sm bg-yellow-400',
+        'shadow-sm bg-green-400',
+        'shadow-sm bg-purple-400',
+        'shadow-sm bg-red-300',
+        'shadow-sm bg-indigo-400',
+        'shadow-sm bg-orange-400',
+        'shadow-sm bg-teal-400',
+        'shadow-sm bg-rose-400',
+      ];
+      const result = data.map((item, index) => ({
+        name: item.category_name,
+        score: item.score,
+        color: colorPalette[index % colorPalette.length],
+      }));
+      setCategoriesScore(result);
+    })
+    .catch((err) => {
+      console.error("Failed to fetch achievements", err);
+      setCategoriesScore([]);
+    });
+}, []);
+
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -636,19 +664,24 @@ const handleChangePasswordSubmit = async () => {
           <section className="bg-white rounded-xl shadow-md p-6 min-h-[300px]">
             <div className="flex justify-between items-center mb-2 px-2">
               <span className="font-semibold text-xl ">Categories</span>
-              <span className="font-semibold text-xl "> Your Score</span>
+              <span className="font-semibold text-xl ">Your Score</span>
             </div>
             <div className="space-y-4">
-              {categoriesScore.map((cat, idx) => (
+              {categoriesScore.map((cat) => (
                 <div key={cat.name} className="flex items-center justify-between bg-gray-200 rounded-2xl shadow-sm px-4 py-3">
-                  <span className={`px-4 py-2 rounded-full text-white font-bold text-md ${cat.color}`}>{cat.name}</span>
+                  <span className={`px-4 py-2 rounded-full text-white font-bold text-md ${cat.color}`}>
+                    {cat.name}
+                  </span>
                   <div className="flex flex-col justify-center items-center h-full">
-                    <span className="bg-green-200 text-green-800 font-bold px-4 py-1 rounded-full text-md shadow">{cat.score}</span>
+                    <span className="bg-green-200 text-green-800 font-bold px-4 py-1 rounded-full text-md shadow">
+                      {cat.score}
+                    </span>
                   </div>
                 </div>
               ))}
             </div>
           </section>
+
         )}
       </main>
 
