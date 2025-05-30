@@ -153,50 +153,69 @@ function Header({ onPostCreated }) {
   };
 
   // Handle create post with file upload
-  const handleCreatePost = async () => {
-    try {
-      // Validate required fields
-      if (!postTitle.trim()) {
-        alert('Please enter a post title');
-        return;
-      }
-      if (!selectedFile && !videoLink.trim()) {
-        alert('Please either upload an image or provide a video link');
-        return;
-      }
-      const postData = {
-        title: postTitle,
-        content: postContent,
-        categories: selectedCategories,
-        RecommendAgeRange: ageRecommend,
-        youtube_link: videoLink,
-      };
-      const formData = new FormData();
-      formData.append('post', JSON.stringify(postData));
-      if (selectedFile) {
-        formData.append('picture', selectedFile);
-      }
-      const response = await fetch('http://localhost:8080/create_post', {
-        method: 'POST',
-        credentials: 'include',
-        body: formData,
-      });
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to create post: ${errorText}`);
-      }
-      const result = await response.json();
-      console.log('Post created successfully:', result);
-      // Reset form and close modal
-      resetForm();
-      setIsCreateModalOpen(false);
-      alert('Post created successfully!');
-      if (onPostCreated) onPostCreated();
-    } catch (error) {
-      console.error('Error creating post:', error);
-      alert('Failed to create post. Please try again.');
+  const isValidYoutubeLink = (url) => {
+  const pattern = /^(https?\:\/\/)?(www\.youtube\.com|youtu\.be)\/.+$/;
+  return pattern.test(url);
+};
+
+const handleCreatePost = async () => {
+  try {
+    // Validate title
+    if (!postTitle.trim()) {
+      alert('Please enter a post title');
+      return;
     }
-  };
+
+    // Validate image or video input
+    if (!selectedFile && !videoLink.trim()) {
+      alert('Please either upload an image or provide a video link');
+      return;
+    }
+
+    // ✅ Validate YouTube link format
+    if (videoLink.trim() && !isValidYoutubeLink(videoLink.trim())) {
+      alert('Please enter a valid YouTube link (e.g. https://www.youtube.com/watch?v=...)');
+      return;
+    }
+
+    // Prepare post data
+    const postData = {
+      title: postTitle,
+      content: postContent,
+      categories: selectedCategories,
+      RecommendAgeRange: ageRecommend,
+      youtube_link: videoLink,
+    };
+
+    const formData = new FormData();
+    formData.append('post', JSON.stringify(postData));
+    if (selectedFile) {
+      formData.append('picture', selectedFile);
+    }
+
+    const response = await fetch('http://localhost:8080/create_post', {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to create post: ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log('Post created successfully:', result);
+    resetForm();
+    setIsCreateModalOpen(false);
+    alert('Post created successfully!');
+    if (onPostCreated) onPostCreated();
+  } catch (error) {
+    console.error('Error creating post:', error);
+    alert('Failed to create post. Please try again.');
+  }
+};
+
 
   // Handle search
   const handleSearch = (e) => {
