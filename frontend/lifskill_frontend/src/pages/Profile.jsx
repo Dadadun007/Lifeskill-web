@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Header from './Header';
+import Footer from './Footer';
 
 function Profile() {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
@@ -567,7 +568,7 @@ const handleChangePasswordSubmit = async () => {
               <div className="text-center text-gray-500">No posts</div>
             ) : (
               Array.isArray(myPosts) && myPosts.map((post, idx) => (
-                <div key={post.id || idx} className="flex flex-col md:flex-row bg-white rounded-lg shadow-md p-4 relative">
+                <div key={post.id || idx} className="my-4 flex flex-col md:flex-row bg-white rounded-lg shadow-md p-4 relative">
                   <div className="flex flex-col justify-between flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <img
@@ -650,6 +651,8 @@ const handleChangePasswordSubmit = async () => {
           </section>
         )}
       </main>
+
+      <Footer />
     </div>
   );
 }

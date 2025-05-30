@@ -129,6 +129,7 @@ type PostDTO struct {
 	HasBookmarked     bool          `json:"has_bookmarked"`
 	Comments          []CommentDTO  `json:"comments"`
 	Like              int           `json:"like"`
+	CurrentApprovals  int           `json:"current_approvals"`
 }
 
 type CategoryDTO struct {
@@ -158,6 +159,7 @@ func GetAllPosts(db *gorm.DB) fiber.Handler {
 		if err := db.Preload("User").
 			Preload("Categories").
 			Preload("Comments").
+			Where("status = ?", "approved").
 			Limit(limit).
 			Offset(offset).
 			Order("created_at desc").
@@ -192,6 +194,9 @@ func GetAllPosts(db *gorm.DB) fiber.Handler {
 				})
 			}
 
+			var approvalCount int64
+			db.Model(&PostApproval{}).Where("post_id = ?", post.ID).Count(&approvalCount)
+
 			postDTO := PostDTO{
 				ID:                post.ID,
 				Title:             post.Title,
@@ -205,9 +210,10 @@ func GetAllPosts(db *gorm.DB) fiber.Handler {
 					Username: post.User.Username,
 					Picture:  post.User.Picture,
 				},
-				CreatedAt: post.CreatedAt,
-				Like:      post.Like,
-				Comments:  comments,
+				CreatedAt:        post.CreatedAt,
+				Like:             post.Like,
+				CurrentApprovals: int(approvalCount),
+				Comments:         comments,
 			}
 			postDTOs = append(postDTOs, postDTO)
 		}
@@ -237,6 +243,9 @@ func GetPostByID(db *gorm.DB) fiber.Handler {
 			})
 		}
 
+		var approvalCount int64
+		db.Model(&PostApproval{}).Where("post_id = ?", post.ID).Count(&approvalCount)
+
 		postDTO := PostDTO{
 			ID:                post.ID,
 			Title:             post.Title,
@@ -250,7 +259,8 @@ func GetPostByID(db *gorm.DB) fiber.Handler {
 				Username: post.User.Username,
 				Picture:  post.User.Picture,
 			},
-			CreatedAt: post.CreatedAt,
+			CreatedAt:        post.CreatedAt,
+			CurrentApprovals: int(approvalCount),
 		}
 
 		return c.JSON(postDTO)
@@ -335,6 +345,9 @@ func SearchPosts(db *gorm.DB) fiber.Handler {
 				})
 			}
 
+			var approvalCount int64
+			db.Model(&PostApproval{}).Where("post_id = ?", post.ID).Count(&approvalCount)
+
 			postDTOs = append(postDTOs, PostDTO{
 				ID:                post.ID,
 				Title:             post.Title,
@@ -348,7 +361,8 @@ func SearchPosts(db *gorm.DB) fiber.Handler {
 					Username: post.User.Username,
 					Picture:  post.User.Picture,
 				},
-				CreatedAt: post.CreatedAt,
+				CreatedAt:        post.CreatedAt,
+				CurrentApprovals: int(approvalCount),
 			})
 		}
 
@@ -436,6 +450,9 @@ func GetMyPosts(db *gorm.DB) fiber.Handler {
 				})
 			}
 
+			var approvalCount int64
+			db.Model(&PostApproval{}).Where("post_id = ?", post.ID).Count(&approvalCount)
+
 			postDTO := PostDTO{
 				ID:                post.ID,
 				Title:             post.Title,
@@ -449,7 +466,8 @@ func GetMyPosts(db *gorm.DB) fiber.Handler {
 					Username: post.User.Username,
 					Picture:  post.User.Picture,
 				},
-				CreatedAt: post.CreatedAt,
+				CreatedAt:        post.CreatedAt,
+				CurrentApprovals: int(approvalCount),
 			}
 			postDTOs = append(postDTOs, postDTO)
 		}
@@ -468,7 +486,8 @@ func FilterPosts(db *gorm.DB) fiber.Handler {
 		offset, _ := strconv.Atoi(c.Query("offset", "0"))
 
 		var posts []Post
-		query := db.Preload("User").Preload("Categories").Preload("Comments")
+		query := db.Preload("User").Preload("Categories").Preload("Comments").
+			Where("status = ?", "approved")
 
 		fmt.Println("FilterPosts - Received category_id:", categoryID)
 		fmt.Println("FilterPosts - Received sort parameter:", sort)
@@ -503,7 +522,7 @@ func FilterPosts(db *gorm.DB) fiber.Handler {
 
 		// Get total count for pagination
 		var total int64
-		countQuery := db.Model(&Post{})
+		countQuery := db.Model(&Post{}).Where("status = ?", "approved")
 		if categoryID != "" {
 			countQuery = countQuery.Joins("JOIN post_categories pc ON pc.post_id = posts.id").Where("pc.category_id = ?", categoryID)
 		}
@@ -537,6 +556,9 @@ func FilterPosts(db *gorm.DB) fiber.Handler {
 				})
 			}
 
+			var approvalCount int64
+			db.Model(&PostApproval{}).Where("post_id = ?", post.ID).Count(&approvalCount)
+
 			postDTO := PostDTO{
 				ID:                post.ID,
 				Title:             post.Title,
@@ -550,9 +572,10 @@ func FilterPosts(db *gorm.DB) fiber.Handler {
 					Username: post.User.Username,
 					Picture:  post.User.Picture,
 				},
-				CreatedAt: post.CreatedAt,
-				Like:      post.Like,
-				Comments:  comments,
+				CreatedAt:        post.CreatedAt,
+				Like:             post.Like,
+				CurrentApprovals: int(approvalCount),
+				Comments:         comments,
 			}
 			postDTOs = append(postDTOs, postDTO)
 		}
@@ -574,6 +597,11 @@ func ApprovePost(db *gorm.DB) fiber.Handler {
 		var post Post
 		if err := db.Preload("Categories").First(&post, postID).Error; err != nil {
 			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "Post not found"})
+		}
+
+		// Check if user is trying to approve their own post
+		if post.UserID == userID {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "You cannot approve your own post"})
 		}
 
 		// Check if user is expert in any of the post's categories
@@ -615,14 +643,24 @@ func ApprovePost(db *gorm.DB) fiber.Handler {
 		var approvalCount int64
 		db.Model(&PostApproval{}).Where("post_id = ?", post.ID).Count(&approvalCount)
 
+		// Update post's Total_Approved_Users
+		post.ApprovedUsers = int(approvalCount)
+
 		if approvalCount >= 3 && post.Status != "approved" {
 			post.Status = "approved"
-			if err := db.Save(&post).Error; err != nil {
-				return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update post status"})
-			}
 		}
 
-		return c.JSON(fiber.Map{"message": "Post approved", "current_approvals": approvalCount, "status": post.Status})
+		// Save the updated post
+		if err := db.Save(&post).Error; err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to update post status"})
+		}
+
+		return c.JSON(fiber.Map{
+			"message":              "Post approved",
+			"current_approvals":    approvalCount,
+			"status":               post.Status,
+			"total_approved_users": post.ApprovedUsers,
+		})
 	}
 }
 
@@ -643,6 +681,8 @@ func GetApprovedPosts(db *gorm.DB) fiber.Handler {
 					CategoriesName: cat.CategoriesName,
 				})
 			}
+			var approvalCount int64
+			db.Model(&PostApproval{}).Where("post_id = ?", post.ID).Count(&approvalCount)
 			postDTO := PostDTO{
 				ID:                post.ID,
 				Title:             post.Title,
@@ -656,7 +696,8 @@ func GetApprovedPosts(db *gorm.DB) fiber.Handler {
 					Username: post.User.Username,
 					Picture:  post.User.Picture,
 				},
-				CreatedAt: post.CreatedAt,
+				CreatedAt:        post.CreatedAt,
+				CurrentApprovals: int(approvalCount),
 			}
 			postDTOs = append(postDTOs, postDTO)
 		}
@@ -818,10 +859,11 @@ func GetPendingPostsForExpert(db *gorm.DB) fiber.Handler {
 		}
 
 		// Find posts with status 'pending' and at least one matching category
+		// Exclude posts created by the current user
 		var posts []Post
 		err := db.Preload("User").Preload("Categories").
 			Joins("JOIN post_categories pc ON pc.post_id = posts.id").
-			Where("posts.status = ? AND pc.category_id IN ?", "pending", expertCategoryIDs).
+			Where("posts.status = ? AND pc.category_id IN ? AND posts.user_id != ?", "pending", expertCategoryIDs, userID).
 			Group("posts.id").
 			Order("posts.created_at desc").
 			Find(&posts).Error
@@ -839,6 +881,8 @@ func GetPendingPostsForExpert(db *gorm.DB) fiber.Handler {
 					CategoriesName: cat.CategoriesName,
 				})
 			}
+			var approvalCount int64
+			db.Model(&PostApproval{}).Where("post_id = ?", post.ID).Count(&approvalCount)
 			postDTO := PostDTO{
 				ID:                post.ID,
 				Title:             post.Title,
@@ -852,7 +896,8 @@ func GetPendingPostsForExpert(db *gorm.DB) fiber.Handler {
 					Username: post.User.Username,
 					Picture:  post.User.Picture,
 				},
-				CreatedAt: post.CreatedAt,
+				CreatedAt:        post.CreatedAt,
+				CurrentApprovals: int(approvalCount),
 			}
 			postDTOs = append(postDTOs, postDTO)
 		}
@@ -991,7 +1036,7 @@ func GetMyAchievedPosts(db *gorm.DB) fiber.Handler {
 	}
 }
 
-// Recommend posts by age range
+// Recommend posts by age
 func RecommendPostsByAge(db *gorm.DB) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		ageStr := c.Query("age")
@@ -1017,7 +1062,10 @@ func RecommendPostsByAge(db *gorm.DB) fiber.Handler {
 		}
 
 		var posts []Post
-		if err := db.Preload("User").Preload("Categories").Find(&posts).Error; err != nil {
+		if err := db.Preload("User").
+			Preload("Categories").
+			Where("status = ?", "approved").
+			Find(&posts).Error; err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to fetch posts"})
 		}
 
