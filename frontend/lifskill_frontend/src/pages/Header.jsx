@@ -436,7 +436,7 @@ function Header({ onPostCreated }) {
               
               {/* Text Area */}
               <textarea
-                placeholder="Body text (optional)"
+                placeholder="Content (optional)"
                 value={postContent}
                 onChange={(e) => setPostContent(e.target.value)}
                 className="w-full h-24 px-4 py-3 bg-gray-800 text-white rounded-b-lg border-none outline-none resize-none placeholder-gray-400"
