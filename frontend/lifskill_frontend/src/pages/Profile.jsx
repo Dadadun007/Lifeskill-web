@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Header from './Header';
 import Footer from './Footer';
+import { getApiUrl, getImageUrl } from '../config';
+
 function Profile() {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
@@ -89,10 +91,9 @@ const handleChangePasswordSubmit = async () => {
       .catch(() => setMyPosts([]));
   };
   useEffect(() => {
-    fetch('http://localhost:8080/user/me', { credentials: 'include' })
+    fetch(getApiUrl('/user/me'), { credentials: 'include' })
       .then(res => res.json())
       .then(user => {
-        // ตรวจสอบ talents ว่าเป็น array ของ string หรือ object
         let talents = [];
         if (Array.isArray(user.talents) && typeof user.talents[0] === "string") {
           talents = user.talents;
@@ -109,11 +110,11 @@ const handleChangePasswordSubmit = async () => {
         if (user.picture) {
           let picPath = user.picture.replace(/^\.?\/?/, '');
           if (!picPath.startsWith('http')) {
-            picPath = `http://localhost:8080/${picPath}`;
+            picPath = getImageUrl(picPath);
           }
           setProfileImage(picPath);
         } else {
-          setProfileImage("/default-avatar.png"); // fallback
+          setProfileImage("/default-avatar.png");
         }
         localStorage.setItem('user', JSON.stringify(user));
       })
@@ -244,7 +245,7 @@ const handleChangePasswordSubmit = async () => {
         if (user.picture) {
           let picPath = user.picture.replace(/^\.?\/?/, '');
           if (!picPath.startsWith('http')) {
-            picPath = `http://localhost:8080/${picPath}`;
+            picPath = getImageUrl(picPath);
           }
           setProfileImage(picPath);
         } else {
@@ -572,9 +573,7 @@ const handleChangePasswordSubmit = async () => {
                             ? (
                                 post.user.picture.startsWith('http')
                                   ? post.user.picture
-                                  : post.user.picture.includes('uploads/profile_pictures/')
-                                    ? "http://localhost:8080/" + post.user.picture.replace(/^\.?\/?/, '')
-                                    : "http://localhost:8080/uploads/profile_pictures/" + encodeURIComponent(post.user.picture)
+                                  : getImageUrl(post.user.picture)
                               )
                             : "/default-avatar.png"
                         }
@@ -614,9 +613,7 @@ const handleChangePasswordSubmit = async () => {
                       src={
                         post.picture.startsWith('http')
                           ? post.picture
-                          : post.picture.startsWith('/')
-                            ? "http://localhost:8080" + post.picture
-                            : "http://localhost:8080/uploads/" + encodeURIComponent(post.picture)
+                          : getImageUrl(post.picture)
                       }
                       alt="Post"
                       className="w-full md:w-40 h-32 object-cover rounded-lg mb-4 md:mb-0 md:ml-4"

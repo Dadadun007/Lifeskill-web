@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import Header from './Header';
 import { Heart, MessageCircle, Search as SearchIcon, Home } from 'lucide-react';
+import { getApiUrl, getImageUrl } from '../config';
 
 function Search() {
   const [searchParams] = useSearchParams();
@@ -21,7 +22,7 @@ function Search() {
       setError(null);
       
       try {
-        const response = await fetch(`http://localhost:8080/search_post?q=${encodeURIComponent(query)}`, {
+        const response = await fetch(getApiUrl(`/search_post?q=${encodeURIComponent(query)}`), {
           credentials: 'include',
         });
         
@@ -30,7 +31,7 @@ function Search() {
         }
         
         const data = await response.json();
-        console.log('Search results:', data); // Debug log
+        console.log('Search results:', data);
         setPosts(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error('Search error:', error);
@@ -138,7 +139,7 @@ function Search() {
                         {/* Author Info */}
                         <div className="flex items-center gap-3">
                           <img
-                            src={post.user?.picture ? `http://localhost:8080/${post.user.picture}` : 'https://via.placeholder.com/32'}
+                            src={post.user?.picture ? getImageUrl(post.user.picture) : 'https://via.placeholder.com/32'}
                             alt={post.user?.username || 'User'}
                             className="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100"
                           />
@@ -188,7 +189,7 @@ function Search() {
                       {post.picture && (
                         <div className="lg:w-80 flex-shrink-0">
                           <img
-                            src={`http://localhost:8080/uploads/${post.picture}`}
+                            src={getImageUrl(post.picture)}
                             alt="Post image"
                             className="w-full h-48 lg:h-40 object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
                           />

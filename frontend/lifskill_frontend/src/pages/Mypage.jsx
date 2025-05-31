@@ -3,6 +3,7 @@ import { ChevronDown, Bookmark, Heart, MessageCircle, Loader2 } from 'lucide-rea
 import { Link } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
+import { getApiUrl, getImageUrl } from '../config';
 
 function Mypage() {
   const [posts, setPosts] = useState([]);
@@ -92,9 +93,10 @@ function Mypage() {
 
   useEffect(() => {
     const fetchAllPosts = async () => {
-      setIsLoadingPosts(true);
       try {
-        let url = 'http://localhost:8080/filter_posts?';
+        setIsLoadingPosts(true);
+        let url = getApiUrl('/filter_posts?');
+        
         const params = new URLSearchParams();
 
         if (sortOrder && sortOrder !== 'recent') {
@@ -147,7 +149,7 @@ function Mypage() {
     if (isLoadingMore || !Array.isArray(posts) || posts.length >= totalPosts) return;
 
     setIsLoadingMore(true);
-    let url = 'http://localhost:8080/filter_posts?';
+    let url = getApiUrl('/filter_posts?');
     
     const params = new URLSearchParams();
 
@@ -173,7 +175,6 @@ function Mypage() {
         return res.json();
       })
       .then((data) => {
-        // Ensure data.posts is an array before spreading
         const newPosts = Array.isArray(data.posts) ? data.posts : [];
         setPosts(prevPosts => [...(Array.isArray(prevPosts) ? prevPosts : []), ...newPosts]);
         setOffset(prevOffset => prevOffset + 10);
