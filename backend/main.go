@@ -8,58 +8,62 @@ import (
 	"github.com/dadadun/lifskill/database"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/helmet"
 	"github.com/golang-jwt/jwt/v4"
 )
 
-type CustomClaims struct {
-	jwt.StandardClaims
-	UserID uint `json:"user_id"`
-}
-
 func authRequired(c *fiber.Ctx) error {
 	cookie := c.Cookies("jwt")
+	fmt.Println("JWT cookie received in middleware:", cookie)
 	if cookie == "" {
+		fmt.Println("No JWT cookie found!")
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Missing JWT cookie",
 		})
 	}
 
-	token, err := jwt.ParseWithClaims(cookie, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
-		// Validate signing method
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
+	// Print the secret key length for debugging
+	fmt.Printf("JWT Secret Key length in middleware: %d bytes\n", len(database.JwtSecretKey))
+
+	token, err := jwt.ParseWithClaims(cookie, &jwt.StandardClaims{}, func(token *jwt.Token) (interface{}, error) {
+		// Print the signing method for debugging
+		fmt.Printf("Token signing method: %v\n", token.Method)
 		return database.JwtSecretKey, nil
 	})
 
 	if err != nil {
+		fmt.Printf("JWT parse error: %v\n", err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Invalid token",
+			"error": "Invalid token: " + err.Error(),
 		})
 	}
 
 	if !token.Valid {
+		fmt.Println("JWT token is not valid!")
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Token is not valid",
 		})
 	}
 
-	claims, ok := token.Claims.(*CustomClaims)
+	claims, ok := token.Claims.(*jwt.StandardClaims)
 	if !ok {
+		fmt.Println("JWT claims type assert failed")
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "Invalid token claims",
 		})
 	}
 
-	// Check token expiration
-	if claims.ExpiresAt < time.Now().Unix() {
+	fmt.Println("JWT claims subject (userID):", claims.Subject)
+
+	userID, err := strconv.ParseUint(claims.Subject, 10, 64)
+	if err != nil {
+		fmt.Println("Failed to parse userID from claims:", err)
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Token has expired",
+			"error": "Invalid userID in token",
 		})
 	}
 
-	c.Locals("userID", claims.UserID)
+	c.Locals("userID", uint(userID))
+	fmt.Println("userID saved in Locals:", userID)
 	return c.Next()
 }
 
@@ -70,13 +74,10 @@ func main() {
 	config.LoadConfig()
 	database.ConnectDatabase()
 
-	// Add security headers
-	app.Use(helmet.New())
-
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     config.AppConfig.FrontendURL,
 		AllowCredentials: true,
-		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
+		AllowHeaders:     "Origin, Content-Type, Accept",
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
 	}))
 
@@ -125,7 +126,6 @@ func main() {
 		return database.CreatePost(database.DB, c)
 	})
 
-	// New post-related endpoints
 	// New post-related endpoints
 	auth.Post("/post/:id/comment", database.AddComment(database.DB))
 	auth.Put("/post/:id/bookmark", database.ToggleBookmark(database.DB))
