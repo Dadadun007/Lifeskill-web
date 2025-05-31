@@ -92,8 +92,8 @@ function Home() {
       })
       .then((data) => {
         console.log('Fetched posts data:', data);
-        setPosts(data.posts);
-        setTotalPosts(data.total);
+        setPosts(Array.isArray(data.posts) ? data.posts : []);
+        setTotalPosts(data.total || 0);
         setOffset(10); // Reset offset for next load
       })
       .catch((error) => {
@@ -105,7 +105,7 @@ function Home() {
   }, [sortOrder, selectedCategory]); // Rerun when sortOrder or selectedCategory changes
 
   const loadMorePosts = () => {
-    if (isLoadingMore || posts.length >= totalPosts) return;
+    if (isLoadingMore || !Array.isArray(posts) || posts.length >= totalPosts) return;
 
     setIsLoadingMore(true);
     let url = 'http://localhost:8080/filter_posts?';
@@ -134,7 +134,9 @@ function Home() {
         return res.json();
       })
       .then((data) => {
-        setPosts(prevPosts => [...prevPosts, ...data.posts]);
+        // Ensure data.posts is an array before spreading
+        const newPosts = Array.isArray(data.posts) ? data.posts : [];
+        setPosts(prevPosts => [...(Array.isArray(prevPosts) ? prevPosts : []), ...newPosts]);
         setOffset(prevOffset => prevOffset + 10);
         setIsLoadingMore(false);
       })
@@ -403,7 +405,7 @@ function Home() {
 
         {/* Load More */}
         <div className="text-center mt-12">
-          {posts.length < totalPosts && (
+          {Array.isArray(posts) && posts.length < totalPosts && (
             <button 
               onClick={loadMorePosts}
               disabled={isLoadingMore}

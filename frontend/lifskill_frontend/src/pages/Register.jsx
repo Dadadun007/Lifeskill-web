@@ -239,7 +239,7 @@ function Register() {
                     onChange={(e) => setGender(e.target.value)}
                     className="w-full bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-gray-800 focus:outline-none focus:border-blue-500 focus:bg-white transition-all duration-300 hover:border-gray-300 appearance-none cursor-pointer"
                   >
-                    <option value="Not specified">Not specified</option>
+                    <option value="Not_specified">Not specified</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
                   </select>

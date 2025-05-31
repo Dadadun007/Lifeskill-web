@@ -104,9 +104,9 @@ const PostRequests = () => {
     : [];
 
   return (
-    <div className="bg-gradient-to-br from-gray-50 via-white to-gray-50">
+    <div className="bg-gradient-to-br from-gray-50 via-white to-gray-50 min-h-screen">
       <Header />
-      <main className="max-w-4xl mx-auto px-6 py-8">
+      <main className="max-w-4xl mx-auto px-6 py-8 bg-transparent">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Post Requests</h1>
         <div className="mb-6">
           <h2 className="text-lg font-semibold text-gray-700">

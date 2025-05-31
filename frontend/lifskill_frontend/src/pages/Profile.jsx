@@ -2,10 +2,8 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Header from './Header';
 import Footer from './Footer';
-
 function Profile() {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
-
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 const [passwordData, setPasswordData] = useState({
   oldPassword: "",
@@ -15,7 +13,6 @@ const [passwordData, setPasswordData] = useState({
 const [passwordError, setPasswordError] = useState("");
 const [passwordSuccess, setPasswordSuccess] = useState("");
 const [fieldErrors, setFieldErrors] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" });
-
 const handlePasswordChange = (e) => {
   const { name, value } = e.target;
   setPasswordData((prev) => ({ ...prev, [name]: value }));
@@ -33,7 +30,6 @@ const handlePasswordChange = (e) => {
     }
   }
 };
-
 const handleChangePasswordSubmit = async () => {
   if (passwordData.newPassword !== passwordData.confirmPassword) {
     setFieldErrors((prev) => ({ ...prev, confirmPassword: "New passwords do not match." }));
@@ -67,7 +63,6 @@ const handleChangePasswordSubmit = async () => {
     setPasswordError("Server error. Please try again.");
   }
 };
-
   const [profileImage, setProfileImage] = useState("profile.jpg");
   const [formData, setFormData] = useState({
     username: "",
@@ -83,7 +78,6 @@ const handleChangePasswordSubmit = async () => {
   const [activeTab, setActiveTab] = useState('posts');
   const [savedPosts, setSavedPosts] = useState([]); // mock ข้อมูล savedPosts
   const [categoriesScore, setCategoriesScore] = useState([]);
-
   // ฟังก์ชันสำหรับดึงโพสต์ของตัวเอง
   const fetchMyPosts = () => {
     fetch('http://localhost:8080/my-posts', { credentials: 'include' })
@@ -94,7 +88,6 @@ const handleChangePasswordSubmit = async () => {
       })
       .catch(() => setMyPosts([]));
   };
-
   useEffect(() => {
     fetch('http://localhost:8080/user/me', { credentials: 'include' })
       .then(res => res.json())
@@ -126,18 +119,15 @@ const handleChangePasswordSubmit = async () => {
       })
       .catch(() => setProfileImage("/default-avatar.png"));
   }, []);
-
   useEffect(() => {
     fetch('http://localhost:8080/categories')
       .then(res => res.json())
       .then(data => setCategories(data))
       .catch(err => setCategories([]));
   }, []);
-
   useEffect(() => {
     fetchMyPosts();
   }, []);
-
   // mock: สมมุติว่ามี savedPosts (ถ้ายังไม่มี endpoint จริง)
   useEffect(() => {
     if (activeTab === 'achievement') {
@@ -155,7 +145,6 @@ const handleChangePasswordSubmit = async () => {
       ]);
     }
   }, [activeTab]);
-
   useEffect(() => {
   fetch('http://localhost:8080/my_achievements', {
     credentials: 'include',
@@ -186,8 +175,6 @@ const handleChangePasswordSubmit = async () => {
       setCategoriesScore([]);
     });
 }, []);
-
-
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -198,7 +185,6 @@ const handleChangePasswordSubmit = async () => {
       }));
     }
   };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -206,7 +192,6 @@ const handleChangePasswordSubmit = async () => {
       [name]: value,
     }));
   };
-
   const handleTalentChange = (talent) => {
     setFormData((prev) => {
       const talents = prev.talents.includes(talent)
@@ -215,7 +200,6 @@ const handleChangePasswordSubmit = async () => {
       return { ...prev, talents };
     });
   };
-
   const handleSave = async () => {
     setIsPopupOpen(false);
     // map talents (ชื่อ) เป็น id
@@ -270,16 +254,13 @@ const handleChangePasswordSubmit = async () => {
       })
       .catch(() => setProfileImage("/default-avatar.png"));
   };
-
   const handleCancel = () => {
     setIsPopupOpen(false);
   };
-
   const handleDeletePost = async (postId) => {
     setPostToDelete(postId);
     setIsDeleteConfirmOpen(true);
   };
-
   const confirmDelete = async () => {
     if (!postToDelete) return;
     
@@ -305,12 +286,10 @@ const handleChangePasswordSubmit = async () => {
       alert('An error occurred while deleting the post. Please try again.');
     }
   };
-
   const cancelDelete = () => {
     setIsDeleteConfirmOpen(false);
     setPostToDelete(null);
   };
-
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 text-black font-sans w-full overflow-x-hidden relative">
       {/* Delete Confirmation Modal */}
@@ -338,7 +317,6 @@ const handleChangePasswordSubmit = async () => {
           </div>
         </div>
       )}
-
       {/* Pop-up */}
       {isPopupOpen && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
@@ -367,7 +345,6 @@ const handleChangePasswordSubmit = async () => {
                   Upload Profile
                 </label>
               </div>
-
               {/* ฟอร์ม */}
               <div className="w-full space-y-4">
                     {/* Username */}
@@ -381,7 +358,6 @@ const handleChangePasswordSubmit = async () => {
                         className="w-full px-3 py-2 bg-gray-100 rounded-lg border-none shadow-sm outline-none text-gray-800 placeholder-gray-800"
                         />
                     </div>
-
                     {/* Email */}
                     <div>
                         <label className="block text-sm font-semibold mb-1">Email</label>
@@ -393,7 +369,6 @@ const handleChangePasswordSubmit = async () => {
                          className="w-full px-3 py-2 bg-gray-100 rounded-lg  shadow-sm outline-none text-gray-800 "
                         />
                     </div>
-
                     {/* Age + Gender ข้างกัน */}
                     <div className="flex gap-4">
                         <div className="flex-1">
@@ -420,7 +395,6 @@ const handleChangePasswordSubmit = async () => {
                         </select>
                         </div>
                     </div>
-
                     {/* Talents แบบปุ่ม */}
                     <div>
                         <label className="block text-sm font-semibold mb-1">Talents</label>
@@ -442,7 +416,6 @@ const handleChangePasswordSubmit = async () => {
                         </div>
                     </div>
                     </div>
-
               {/* ปุ่ม Save/Cancel */}
               <div className="flex justify-center gap-4 mt-4">
                 <button
@@ -523,9 +496,7 @@ const handleChangePasswordSubmit = async () => {
             </div>
           </div>
         )}
-
          <Header onPostCreated={fetchMyPosts} />
-
       {/* Profile Section */}
       <main className="flex-1 px-4 md:px-6 w-full max-w-screen-lg mx-auto mt-8">
         {/* User Info */}
@@ -554,7 +525,6 @@ const handleChangePasswordSubmit = async () => {
       </p>
     </div>
   </div>
-
   {/* ปุ่ม Edit และ Change Password */}
   <div className="flex flex-col md:flex-row gap-2 mt-2 justify-center md:justify-end">
     <button
@@ -571,8 +541,6 @@ const handleChangePasswordSubmit = async () => {
     </button>
   </div>
 </section>
-
-
         {/* Tabs */}
         <div className="flex gap-4 mb-6">
           <button
@@ -588,7 +556,6 @@ const handleChangePasswordSubmit = async () => {
             Your Achievement
           </button>
         </div>
-
         {/* Your Posts หรือ Your Achievement */}
         {activeTab === 'posts' ? (
           <section className="bg-[#f2f3f4] rounded-xl shadow-md p-6 min-h-[300px]">
@@ -662,32 +629,36 @@ const handleChangePasswordSubmit = async () => {
           </section>
         ) : (
           <section className="bg-white rounded-xl shadow-md p-6 min-h-[300px]">
-            <div className="flex justify-between items-center mb-2 px-2">
-              <span className="font-semibold text-xl ">Categories</span>
-              <span className="font-semibold text-xl ">Your Score</span>
-            </div>
-            <div className="space-y-4">
-              {categoriesScore.map((cat) => (
-                <div key={cat.name} className="flex items-center justify-between bg-gray-200 rounded-2xl shadow-sm px-4 py-3">
-                  <span className={`px-4 py-2 rounded-full text-white font-bold text-md ${cat.color}`}>
-                    {cat.name}
-                  </span>
-                  <div className="flex flex-col justify-center items-center h-full">
-                    <span className="bg-green-200 text-green-800 font-bold px-4 py-1 rounded-full text-md shadow">
-                      {cat.score}
-                    </span>
-                  </div>
+            {Array.isArray(categoriesScore) && categoriesScore.length === 0 ? (
+              <div className="text-center text-gray-500 py-20">You didn't achive anything.</div>
+            ) : (
+              <>
+                <div className="flex justify-between items-center mb-2 px-2">
+                  <span className="font-semibold text-xl ">Categories</span>
+                  <span className="font-semibold text-xl ">Your Score</span>
                 </div>
-              ))}
-            </div>
+                <div className="space-y-4">
+                  {categoriesScore.map((cat) => (
+                    <div key={cat.name} className="flex items-center justify-between bg-gray-200 rounded-2xl shadow-sm px-4 py-3">
+                      <span className={`px-4 py-2 rounded-full text-white font-bold text-md ${cat.color}`}>
+                        {cat.name}
+                      </span>
+                      <div className="flex flex-col justify-center items-center h-full">
+                        <span className="bg-green-200 text-green-800 font-bold px-4 py-1 rounded-full text-md shadow">
+                          {cat.score}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </section>
-
         )}
       </main>
-
       <Footer />
     </div>
   );
 }
-
 export default Profile;
+

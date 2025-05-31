@@ -126,8 +126,8 @@ function Mypage() {
 
         const data = await res.json();
         console.log('Fetched ALL posts data:', data);
-        setPosts(data.posts);
-        setTotalPosts(data.total);
+        setPosts(Array.isArray(data.posts) ? data.posts : []);
+        setTotalPosts(data.total || 0);
         setOffset(10); // Reset offset for next load
 
       } catch (error) {
@@ -144,7 +144,7 @@ function Mypage() {
   }, [sortOrder, selectedCategory]);
 
   const loadMorePosts = () => {
-    if (isLoadingMore || posts.length >= totalPosts) return;
+    if (isLoadingMore || !Array.isArray(posts) || posts.length >= totalPosts) return;
 
     setIsLoadingMore(true);
     let url = 'http://localhost:8080/filter_posts?';
@@ -173,7 +173,9 @@ function Mypage() {
         return res.json();
       })
       .then((data) => {
-        setPosts(prevPosts => [...prevPosts, ...data.posts]);
+        // Ensure data.posts is an array before spreading
+        const newPosts = Array.isArray(data.posts) ? data.posts : [];
+        setPosts(prevPosts => [...(Array.isArray(prevPosts) ? prevPosts : []), ...newPosts]);
         setOffset(prevOffset => prevOffset + 10);
         setIsLoadingMore(false);
       })
@@ -192,7 +194,7 @@ function Mypage() {
     setShowCategories(false);
   };
 
-  if (isLoadingRecommended && isLoadingPosts && recommendedPosts.length === 0 && posts.length === 0) {
+  if (isLoadingRecommended && isLoadingPosts && (!Array.isArray(recommendedPosts) || recommendedPosts.length === 0) && (!Array.isArray(posts) || posts.length === 0)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
         <Header />
@@ -480,7 +482,7 @@ function Mypage() {
 
         {/* Load More */}
         <div className="text-center mt-12">
-          {posts.length < totalPosts && (
+          {Array.isArray(posts) && posts.length < totalPosts && (
             <button 
               onClick={loadMorePosts}
               disabled={isLoadingMore}
