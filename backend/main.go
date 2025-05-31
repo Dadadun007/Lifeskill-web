@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/dadadun/lifskill/config"
 	"github.com/dadadun/lifskill/database"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -68,11 +69,13 @@ func authRequired(c *fiber.Ctx) error {
 
 func main() {
 	app := fiber.New()
-	database.LoadConfig()
+
+	// Load configuration
+	config.LoadConfig()
 	database.ConnectDatabase()
 
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "http://localhost:5173",
+		AllowOrigins:     config.AppConfig.FrontendURL,
 		AllowCredentials: true,
 		AllowHeaders:     "Origin, Content-Type, Accept",
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
@@ -83,7 +86,7 @@ func main() {
 	app.Static("/", "../frontend/lifskill_frontend/dist")
 
 	// Serve uploaded images
-	app.Static("/uploads", "./uploads")
+	app.Static("/uploads", config.AppConfig.UploadDir)
 
 	fmt.Println("Application started successfully!")
 
@@ -123,7 +126,7 @@ func main() {
 		return database.CreatePost(database.DB, c)
 	})
 
-	// New post-related endpoints	
+	// New post-related endpoints
 	auth.Post("/post/:id/comment", database.AddComment(database.DB))
 	auth.Put("/post/:id/bookmark", database.ToggleBookmark(database.DB))
 	auth.Delete("/delete_posts/:id", database.DeletePost(database.DB))
@@ -146,5 +149,6 @@ func main() {
 	auth.Get("/my_achievements", database.GetMyAchievements(database.DB))
 	auth.Get("/my_achieved_posts", database.GetMyAchievedPosts(database.DB))
 
-	app.Listen(":8080")
+	// Start server with configured port
+	app.Listen(":" + config.AppConfig.Port)
 }
