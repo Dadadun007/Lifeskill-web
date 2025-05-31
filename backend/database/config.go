@@ -11,12 +11,13 @@ func LoadConfig() {
 	secret := os.Getenv("JWT_SECRET")
 
 	if secret == "" {
-		log.Println("JWT_SECRET not set, using default secret key...")
-		// Use a more secure default key
-		secret = "lifeskill-secure-jwt-secret-key-2024"
-		log.Printf("Using secret key: %s", secret)
+		log.Fatal("JWT_SECRET environment variable is required")
+	}
+
+	if len(secret) < 32 {
+		log.Fatal("JWT_SECRET must be at least 32 characters long")
 	}
 
 	JwtSecretKey = []byte(secret)
-	log.Printf("JWT Secret Key length: %d bytes", len(JwtSecretKey))
+	log.Printf("JWT Secret Key loaded successfully (length: %d bytes)", len(JwtSecretKey))
 }
