@@ -20,12 +20,13 @@ func ConnectDatabase() {
 	dsn := config.GetDSN()
 
 	newLogger := logger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+		log.New(os.Stdout, "\r\n", log.LstdFlags),
 		logger.Config{
 			SlowThreshold: time.Second, // Show SQL threshold
 			LogLevel:      logger.Info, // Log level
 			Colorful:      true,        // Enable color
 		},
+	)
 	)
 
 	var err error
@@ -49,6 +50,7 @@ func ConnectDatabase() {
 		&Comment{},
 		&PostLike{},
 	)
+
 
 	// many to many relationship
 	DB.SetupJoinTable(&Post{}, "PostCategories", &PostCategory{})

@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: lifeskill-backend
+    env: go
+    buildCommand: cd backend && go build -o main
+    startCommand: cd backend && ./main
+    envVars:
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: PORT
+        value: "8080"
+
+  - type: web
+    name: lifeskill-frontend
+    env: node
+    buildCommand: cd frontend/lifskill_frontend && npm install && npm run build
+    startCommand: cd frontend/lifskill_frontend && npm run preview
+    envVars:
+      - key: VITE_API_URL
+        sync: false 
