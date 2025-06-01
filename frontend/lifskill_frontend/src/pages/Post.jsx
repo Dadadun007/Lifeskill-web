@@ -3,6 +3,7 @@ import { Heart, Bookmark, MessageCircle, Share } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
+import { getApiUrl, getImageUrl } from '../config';
 
 // Helper function to extract YouTube video ID from URL
 const getYouTubeVideoId = (url) => {
@@ -16,8 +17,7 @@ const getYouTubeVideoId = (url) => {
 const getUserPictureUrl = (picture) => {
   if (!picture) return 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
   if (picture.startsWith('http')) return picture;
-  if (picture.startsWith('/')) return `http://localhost:8080${picture}`;
-  return `http://localhost:8080/${picture}`;
+  return getImageUrl(picture);
 };
 
 const Post = () => {
@@ -38,7 +38,7 @@ const Post = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch('http://localhost:8080/user/me', {
+        const res = await fetch(getApiUrl('/user/me'), {
           credentials: 'include',
         });
         if (res.ok) {
@@ -63,7 +63,7 @@ const Post = () => {
     const fetchPost = async () => {
       try {
         setError(null);
-        const response = await fetch(`http://localhost:8080/post/${id}`, {
+        const response = await fetch(getApiUrl(`/post/${id}`), {
           credentials: 'include',
         });
         
@@ -75,7 +75,7 @@ const Post = () => {
         }
         
         const data = await response.json();
-        console.log('Post data:', data); // Debug log
+        console.log('Post data:', data);
         setPost(data);
         if (isLoggedIn) {
           setLiked(data.has_liked);
@@ -100,7 +100,7 @@ const Post = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/like_post/${id}`, {
+      const response = await fetch(getApiUrl(`/like_post/${id}`), {
         method: 'PUT',
         credentials: 'include',
       });
@@ -120,7 +120,7 @@ const Post = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:8080/achieve_post/${id}`, {
+      const response = await fetch(getApiUrl(`/achieve_post/${id}`), {
         method: 'POST',
         credentials: 'include',
       });
@@ -166,7 +166,7 @@ const Post = () => {
     if (!content.trim()) return;
 
     try {
-      const response = await fetch(`http://localhost:8080/post/${id}/comment`, {
+      const response = await fetch(getApiUrl(`/post/${id}/comment`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

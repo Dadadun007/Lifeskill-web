@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Eye, EyeOff, User, Mail, Lock, Calendar, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { getApiUrl } from '../config';
 
 function Register() {
   const [username, setUsername] = useState('');
@@ -64,7 +65,7 @@ function Register() {
     }
 
     try {
-      const response = await fetch('http://localhost:8080/register', {
+      const response = await fetch(getApiUrl('/register'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

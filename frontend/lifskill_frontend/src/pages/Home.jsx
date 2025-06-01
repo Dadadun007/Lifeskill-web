@@ -9,6 +9,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import Footer from './Footer';
+import { getApiUrl, getImageUrl } from '../config';
 
 function Home() {
   const [posts, setPosts] = useState([]);
@@ -37,7 +38,7 @@ function Home() {
 
   useEffect(() => {
     // Check user authentication status
-    fetch('http://localhost:8080/user/me', {
+    fetch(getApiUrl('/user/me'), {
       method: 'GET',
       credentials: 'include',
     })
@@ -49,16 +50,16 @@ function Home() {
       .catch(() => setUser(null));
 
     // Fetch categories
-    fetch('http://localhost:8080/categories')
+    fetch(getApiUrl('/categories'))
       .then(res => res.json())
       .then(data => setCategories(data))
       .catch(err => console.error('Failed to fetch categories:', err));
 
-  }, []); // Empty dependency array means this effect runs only once on mount
+  }, []);
 
   // Effect to fetch posts whenever sortOrder or selectedCategory changes
   useEffect(() => {
-    let url = 'http://localhost:8080/filter_posts?';
+    let url = getApiUrl('/filter_posts?');
     
     const params = new URLSearchParams();
 
@@ -102,13 +103,13 @@ function Home() {
         setTotalPosts(0);
       });
 
-  }, [sortOrder, selectedCategory]); // Rerun when sortOrder or selectedCategory changes
+  }, [sortOrder, selectedCategory]);
 
   const loadMorePosts = () => {
     if (isLoadingMore || !Array.isArray(posts) || posts.length >= totalPosts) return;
 
     setIsLoadingMore(true);
-    let url = 'http://localhost:8080/filter_posts?';
+    let url = getApiUrl('/filter_posts?');
     
     const params = new URLSearchParams();
 
@@ -134,7 +135,6 @@ function Home() {
         return res.json();
       })
       .then((data) => {
-        // Ensure data.posts is an array before spreading
         const newPosts = Array.isArray(data.posts) ? data.posts : [];
         setPosts(prevPosts => [...(Array.isArray(prevPosts) ? prevPosts : []), ...newPosts]);
         setOffset(prevOffset => prevOffset + 10);
@@ -334,7 +334,7 @@ function Home() {
                       {/* Author Info */}
                       <div className="flex items-center gap-3">
                         <img
-                          src={post.user?.picture ? `http://localhost:8080/${post.user.picture}` : 'https://via.placeholder.com/32'}
+                          src={post.user?.picture ? getImageUrl(post.user.picture) : 'https://via.placeholder.com/32'}
                           alt={post.user?.username || 'User'}
                           className="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100"
                         />

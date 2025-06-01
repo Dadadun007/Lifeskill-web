@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { getApiUrl } from '../config';
 
 function Login() {
   const [email, setEmail] = useState('');
@@ -25,7 +26,7 @@ function Login() {
     }
 
     try {
-      const response = await fetch('http://localhost:8080/login', {
+      const response = await fetch(getApiUrl('/login'), {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -39,15 +40,14 @@ function Login() {
 
       if (response.ok) {
         // Get user data after successful login
-        const userResponse = await fetch('http://localhost:8080/user/me', {
+        const userResponse = await fetch(getApiUrl('/user/me'), {
           credentials: 'include'
         });
         
         if (userResponse.ok) {
           const userData = await userResponse.json();
-          // You can store user data in localStorage or state management if needed
           localStorage.setItem('user', JSON.stringify(userData));
-          navigate('/mypage'); // Navigate to mypage after successful login
+          navigate('/mypage');
         }
       } else {
         setIsError(true);

@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'; 
 import { useNavigate, Link } from 'react-router-dom';
 import { ChevronDown, X } from 'lucide-react';
+import { API_URL, getApiUrl, getImageUrl } from '../config';
 
 function Header({ onPostCreated }) {
   const [user, setUser] = useState(null);
@@ -28,7 +29,7 @@ function Header({ onPostCreated }) {
     const fetchUser = async () => {
       try {
         setIsLoading(true);
-        const res = await fetch('http://localhost:8080/user/me', {
+        const res = await fetch(getApiUrl('/user/me'), {
           credentials: 'include',
         });
 
@@ -53,7 +54,7 @@ function Header({ onPostCreated }) {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch('http://localhost:8080/categories');
+        const res = await fetch(getApiUrl('/categories'));
         if (!res.ok) throw new Error('Failed to fetch categories');
         const data = await res.json();
         setCategories(data);
@@ -79,7 +80,7 @@ function Header({ onPostCreated }) {
 
   const handleLogout = async () => {
     try {
-      const res = await fetch("http://localhost:8080/auth/logout", {
+      const res = await fetch(getApiUrl("/auth/logout"), {
         method: "POST",
         credentials: "include",
       });
@@ -311,7 +312,7 @@ const handleCreatePost = async () => {
               >
                 <div className="flex items-center gap-2">
                   <img
-                    src={user.picture ? `http://localhost:8080/${user.picture}` : "/default-avatar.png"}
+                    src={user.picture ? getImageUrl(user.picture) : "/default-avatar.png"}
                     alt="User Avatar"
                     className="w-6 h-6 rounded-full object-cover"
                     onError={(e) => {
