@@ -100,7 +100,7 @@ func main() {
 
 	// Configure CORS with more secure settings
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "https://lifeskill-web-frontend.onrender.com,http://localhost:5173",
+		AllowOrigins:     "https://lifeskill-web-frontend.onrender.com",
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, X-Requested-With, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Access-Control-Allow-Methods, Access-Control-Allow-Credentials",
 		ExposeHeaders:    "Set-Cookie",
@@ -130,6 +130,36 @@ func main() {
 		Output:     os.Stdout,
 	}))
 
+	// Add OPTIONS handler for preflight requests
+	app.Options("*", func(c *fiber.Ctx) error {
+		origin := c.Get("Origin")
+		if origin == "https://lifeskill-web-frontend.onrender.com" {
+			c.Set("Access-Control-Allow-Origin", origin)
+			c.Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
+			c.Set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, X-Requested-With, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Access-Control-Allow-Methods, Access-Control-Allow-Credentials")
+			c.Set("Access-Control-Allow-Credentials", "true")
+			c.Set("Access-Control-Max-Age", "3600")
+		}
+		return c.SendStatus(fiber.StatusNoContent)
+	})
+
+	// Add error handler for 404s
+	app.Use(func(c *fiber.Ctx) error {
+		err := c.Next()
+		if err != nil {
+			if err == fiber.ErrNotFound {
+				fmt.Printf("404 Not Found: %s %s\n", c.Method(), c.Path())
+				return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+					"error":  "Route not found",
+					"path":   c.Path(),
+					"method": c.Method(),
+				})
+			}
+			return err
+		}
+		return nil
+	})
+
 	// Add debug logging for CORS
 	app.Use(func(c *fiber.Ctx) error {
 		fmt.Printf("Request: %s %s\n", c.Method(), c.Path())
@@ -151,11 +181,6 @@ func main() {
 	})
 
 	fmt.Println("Application started successfully!")
-
-	// Add OPTIONS handler for preflight requests
-	app.Options("*", func(c *fiber.Ctx) error {
-		return c.SendStatus(fiber.StatusNoContent)
-	})
 
 	// Public routes
 	app.Post("/register", func(c *fiber.Ctx) error {

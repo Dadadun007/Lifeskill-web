@@ -7,6 +7,7 @@ export const defaultFetchOptions = {
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
+    'Origin': 'https://lifeskill-web-frontend.onrender.com',
   },
 };
 
@@ -35,9 +36,15 @@ export const fetchApi = async (path, options = {}) => {
   };
 
   try {
+    console.log('Making request to:', url);
+    console.log('With options:', fetchOptions);
     const response = await fetch(url, fetchOptions);
+    console.log('Response status:', response.status);
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+    
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`HTTP error! status: ${response.status}, data: ${JSON.stringify(errorData)}`);
     }
     return await response.json();
   } catch (error) {
