@@ -18,6 +18,7 @@ var JwtSecretKey = []byte(config.AppConfig.JWTSecret)
 func ConnectDatabase() {
 	// Get DSN from config
 	dsn := config.GetDSN()
+	log.Printf("Connecting to database with DSN: %s", dsn)
 
 	newLogger := logger.New(
 		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
@@ -34,6 +35,7 @@ func ConnectDatabase() {
 	})
 
 	if err != nil {
+		log.Printf("Failed to connect to database: %v", err)
 		panic("failed to connect to database")
 	}
 

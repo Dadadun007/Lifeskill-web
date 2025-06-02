@@ -55,7 +55,12 @@ func GetDSN() string {
 	// Check if we're running on Render (production)
 	if os.Getenv("RENDER") == "true" {
 		// Use the DATABASE_URL environment variable provided by Render
-		return os.Getenv("DATABASE_URL")
+		dbURL := os.Getenv("DATABASE_URL")
+		if dbURL == "" {
+			panic("DATABASE_URL environment variable is not set")
+		}
+		// Add sslmode=require for Render PostgreSQL
+		return dbURL + "?sslmode=require"
 	}
 
 	// Local development connection string
