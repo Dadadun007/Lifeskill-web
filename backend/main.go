@@ -100,7 +100,7 @@ func main() {
 
 	// Configure CORS with more secure settings
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "https://lifeskill-web-frontend.onrender.com",
+		AllowOrigins:     "https://lifskill-web-frontend.onrender.com,https://lifskill-backend.onrender.com",
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, X-Requested-With, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Access-Control-Allow-Methods, Access-Control-Allow-Credentials",
 		ExposeHeaders:    "Set-Cookie",
@@ -133,7 +133,7 @@ func main() {
 	// Add OPTIONS handler for preflight requests
 	app.Options("*", func(c *fiber.Ctx) error {
 		origin := c.Get("Origin")
-		if origin == "https://lifeskill-web-frontend.onrender.com" {
+		if origin == "https://lifskill-web-frontend.onrender.com" || origin == "https://lifskill-backend.onrender.com" {
 			c.Set("Access-Control-Allow-Origin", origin)
 			c.Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
 			c.Set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, X-Requested-With, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Access-Control-Allow-Methods, Access-Control-Allow-Credentials")

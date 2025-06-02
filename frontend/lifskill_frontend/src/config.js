@@ -1,5 +1,5 @@
 // API Configuration
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+export const API_URL = import.meta.env.VITE_API_URL || 'https://lifskill-backend.onrender.com';
 
 // Default fetch options
 export const defaultFetchOptions = {
@@ -7,7 +7,7 @@ export const defaultFetchOptions = {
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    'Origin': 'https://lifeskill-web-frontend.onrender.com',
+    'Origin': 'https://lifskill-web-frontend.onrender.com',
   },
 };
 
