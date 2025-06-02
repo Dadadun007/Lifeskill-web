@@ -3,11 +3,15 @@ package main
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/dadadun/lifskill/config"
 	"github.com/dadadun/lifskill/database"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/helmet"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
+	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/golang-jwt/jwt/v4"
 )
 
@@ -52,6 +56,13 @@ func authRequired(c *fiber.Ctx) error {
 		})
 	}
 
+	// Check token expiration
+	if claims.ExpiresAt < time.Now().Unix() {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Token has expired",
+		})
+	}
+
 	fmt.Println("JWT claims subject (userID):", claims.Subject)
 
 	userID, err := strconv.ParseUint(claims.Subject, 10, 64)
@@ -68,25 +79,66 @@ func authRequired(c *fiber.Ctx) error {
 }
 
 func main() {
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		AppName:      "Lifskill API",
+		ServerHeader: "Lifskill",
+		// Enable case sensitive routing
+		CaseSensitive: true,
+		// Enable strict routing
+		StrictRouting: true,
+		// Enable body parsing
+		BodyLimit: 10 * 1024 * 1024, // 10MB
+	})
 
 	// Load configuration
 	config.LoadConfig()
 	database.ConnectDatabase()
 
+	// Security middleware
+	app.Use(helmet.New()) // Adds various HTTP headers for security
+
+	// Rate limiting
+	app.Use(limiter.New(limiter.Config{
+		Max:        100,             // Max count of requests
+		Expiration: 1 * time.Minute, // Expiration time of the limit
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP() // Use IP as key
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"error": "Too many requests, please try again later",
+			})
+		},
+	}))
+
+	// Configure CORS with more secure settings
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     config.AppConfig.FrontendURL,
+		AllowOrigins:     "https://lifeskill-web-frontend.onrender.com",
 		AllowCredentials: true,
-		AllowHeaders:     "Origin, Content-Type, Accept",
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, X-Requested-With",
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
+		ExposeHeaders:    "Set-Cookie",
+		MaxAge:           3600, // 1 hour
+	}))
+
+	// Request logging
+	app.Use(logger.New(logger.Config{
+		Format:     "${time} | ${status} | ${latency} | ${method} | ${path}\n",
+		TimeFormat: "2006-01-02 15:04:05",
+		TimeZone:   "Local",
 	}))
 
 	fmt.Println("Starting application...")
 
-	app.Static("/", "../frontend/lifskill_frontend/dist")
+	// Serve static files with security headers
+	app.Static("/", "../frontend/lifskill_frontend/dist", fiber.Static{
+		MaxAge: 3600, // 1 hour cache
+	})
 
-	// Serve uploaded images
-	app.Static("/uploads", config.AppConfig.UploadDir)
+	// Serve uploaded images with security headers
+	app.Static("/uploads", config.AppConfig.UploadDir, fiber.Static{
+		MaxAge: 3600, // 1 hour cache
+	})
 
 	fmt.Println("Application started successfully!")
 

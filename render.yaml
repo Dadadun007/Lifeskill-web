@@ -16,7 +16,7 @@ services:
       - key: JWT_SECRET
         sync: false
       - key: FRONTEND_URL
-        value: https://lifskill-frontend.onrender.com
+        value: https://lifeskill-web-frontend.onrender.com
       - key: UPLOAD_DIR
         value: ./uploads
 
@@ -27,6 +27,23 @@ services:
     envVars:
       - key: VITE_API_URL
         value: https://lifskill-backend.onrender.com
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-XSS-Protection
+        value: 1; mode=block
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
 
 databases:
   - name: lifskill-db
