@@ -1,0 +1,49 @@
+services:
+  - type: web
+    name: lifskill-backend
+    env: go
+    buildCommand: cd backend && go build -o main
+    startCommand: cd backend && ./main
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: DB_HOST
+        fromDatabase:
+          name: lifskill-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: lifskill-db
+          property: port
+      - key: DB_USER
+        fromDatabase:
+          name: lifskill-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: lifskill-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: lifskill-db
+          property: database
+      - key: JWT_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        value: https://lifskill-frontend.onrender.com
+      - key: UPLOAD_DIR
+        value: ./uploads
+
+  - type: static
+    name: lifskill-frontend
+    buildCommand: cd frontend/lifskill_frontend && npm install && npm run build
+    staticPublishPath: frontend/lifskill_frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://lifskill-backend.onrender.com
+
+databases:
+  - name: lifskill-db
+    databaseName: lifeskill
+    user: lifskill_user
+    plan: free 
