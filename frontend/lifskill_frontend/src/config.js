@@ -7,7 +7,7 @@ export const defaultFetchOptions = {
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    'Origin': 'https://lifskill-web-frontend.onrender.com',
+    'Origin': window.location.origin,
   },
 };
 
@@ -46,6 +46,7 @@ export const fetchApi = async (path, options = {}) => {
     headers: fetchOptions.headers,
     body: fetchOptions.body ? JSON.parse(fetchOptions.body) : undefined,
   });
+  console.log('Current Origin:', window.location.origin);
 
   try {
     const response = await fetch(url, fetchOptions);

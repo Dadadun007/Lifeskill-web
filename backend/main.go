@@ -131,7 +131,7 @@ func main() {
 
 	// Configure CORS with more secure settings and debug logging
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "https://lifskill-web-frontend.onrender.com,https://lifskill-backend.onrender.com",
+		AllowOrigins:     "https://lifskill-web-frontend.onrender.com,https://lifskill-backend.onrender.com,https://lifeskill-web.onrender.com",
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, X-Requested-With, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Access-Control-Allow-Methods, Access-Control-Allow-Credentials",
 		ExposeHeaders:    "Set-Cookie",
@@ -142,6 +142,7 @@ func main() {
 			fmt.Printf("Origin: %s\n", c.Get("Origin"))
 			fmt.Printf("Method: %s\n", c.Method())
 			fmt.Printf("Path: %s\n", c.Path())
+			fmt.Printf("Headers: %v\n", c.GetReqHeaders())
 			fmt.Printf("=================\n")
 			return false
 		},
@@ -156,7 +157,28 @@ func main() {
 		fmt.Printf("Headers: %v\n", c.GetReqHeaders())
 
 		origin := c.Get("Origin")
-		if origin == "https://lifskill-web-frontend.onrender.com" || origin == "https://lifskill-backend.onrender.com" {
+		allowedOrigins := []string{
+			"https://lifskill-web-frontend.onrender.com",
+			"https://lifskill-backend.onrender.com",
+			"https://lifeskill-web.onrender.com",
+		}
+
+		// If no origin is set, allow the request
+		if origin == "" {
+			fmt.Printf("No Origin header, allowing request\n")
+			return c.SendStatus(fiber.StatusNoContent)
+		}
+
+		// Check if origin is allowed
+		isAllowed := false
+		for _, allowedOrigin := range allowedOrigins {
+			if origin == allowedOrigin {
+				isAllowed = true
+				break
+			}
+		}
+
+		if isAllowed {
 			c.Set("Access-Control-Allow-Origin", origin)
 			c.Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
 			c.Set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, X-Requested-With, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Access-Control-Allow-Methods, Access-Control-Allow-Credentials")
@@ -169,9 +191,37 @@ func main() {
 			fmt.Printf("Access-Control-Allow-Headers: Origin, Content-Type, Accept, Authorization, X-Requested-With, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Access-Control-Allow-Methods, Access-Control-Allow-Credentials\n")
 			fmt.Printf("Access-Control-Allow-Credentials: true\n")
 			fmt.Printf("Access-Control-Max-Age: 3600\n")
+		} else {
+			fmt.Printf("Origin not allowed: %s\n", origin)
 		}
 		fmt.Printf("=====================\n")
 		return c.SendStatus(fiber.StatusNoContent)
+	})
+
+	// Add response headers middleware
+	app.Use(func(c *fiber.Ctx) error {
+		origin := c.Get("Origin")
+		allowedOrigins := []string{
+			"https://lifskill-web-frontend.onrender.com",
+			"https://lifskill-backend.onrender.com",
+			"https://lifeskill-web.onrender.com",
+		}
+
+		// If no origin is set, allow the request
+		if origin == "" {
+			return c.Next()
+		}
+
+		// Check if origin is allowed
+		for _, allowedOrigin := range allowedOrigins {
+			if origin == allowedOrigin {
+				c.Set("Access-Control-Allow-Origin", origin)
+				c.Set("Access-Control-Allow-Credentials", "true")
+				break
+			}
+		}
+
+		return c.Next()
 	})
 
 	// Add error handler for 404s with debug logging
