@@ -99,9 +99,9 @@ func main() {
 
 	// Configure CORS with more secure settings
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "https://lifeskill-web-frontend.onrender.com",
+		AllowOrigins:     "*", // Allow all origins for testing
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
-		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, X-Requested-With, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Access-Control-Allow-Methods, Access-Control-Allow-Credentials",
+		AllowHeaders:     "*", // Allow all headers for testing
 		ExposeHeaders:    "Set-Cookie",
 		AllowCredentials: true,
 		MaxAge:           3600,
