@@ -13,14 +13,18 @@ export const defaultFetchOptions = {
 
 // Helper function to get full API URL
 export const getApiUrl = (path) => {
-  return `${API_URL}${path}`;
+  const url = `${API_URL}${path}`;
+  console.log('Constructed API URL:', url);
+  return url;
 };
 
 // Helper function to get image URL
 export const getImageUrl = (path) => {
   if (!path) return '/default-avatar.png';
   if (path.startsWith('http')) return path;
-  return `${API_URL}/${path}`;
+  const url = `${API_URL}/${path}`;
+  console.log('Constructed image URL:', url);
+  return url;
 };
 
 // Helper function for API calls
@@ -35,20 +39,36 @@ export const fetchApi = async (path, options = {}) => {
     },
   };
 
+  console.group(`API Request: ${options.method || 'GET'} ${path}`);
+  console.log('URL:', url);
+  console.log('Options:', {
+    ...fetchOptions,
+    headers: fetchOptions.headers,
+    body: fetchOptions.body ? JSON.parse(fetchOptions.body) : undefined,
+  });
+
   try {
-    console.log('Making request to:', url);
-    console.log('With options:', fetchOptions);
     const response = await fetch(url, fetchOptions);
     console.log('Response status:', response.status);
     console.log('Response headers:', Object.fromEntries(response.headers.entries()));
     
+    const responseData = await response.json().catch(() => null);
+    console.log('Response data:', responseData);
+    
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`HTTP error! status: ${response.status}, data: ${JSON.stringify(errorData)}`);
+      throw new Error(`HTTP error! status: ${response.status}, data: ${JSON.stringify(responseData)}`);
     }
-    return await response.json();
+    
+    console.groupEnd();
+    return responseData;
   } catch (error) {
     console.error('API call failed:', error);
+    console.log('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    });
+    console.groupEnd();
     throw error;
   }
 }; 

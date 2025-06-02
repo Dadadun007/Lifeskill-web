@@ -11,7 +11,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/helmet"
-	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/golang-jwt/jwt/v4"
 )
@@ -98,31 +97,7 @@ func main() {
 	// Security middleware
 	app.Use(helmet.New())
 
-	// Configure CORS with more secure settings
-	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "https://lifskill-web-frontend.onrender.com,https://lifskill-backend.onrender.com",
-		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
-		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, X-Requested-With, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Access-Control-Allow-Methods, Access-Control-Allow-Credentials",
-		ExposeHeaders:    "Set-Cookie",
-		AllowCredentials: true,
-		MaxAge:           3600,
-	}))
-
-	// Rate limiting
-	app.Use(limiter.New(limiter.Config{
-		Max:        100,
-		Expiration: 1 * time.Minute,
-		KeyGenerator: func(c *fiber.Ctx) string {
-			return c.IP()
-		},
-		LimitReached: func(c *fiber.Ctx) error {
-			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
-				"error": "Too many requests, please try again later",
-			})
-		},
-	}))
-
-	// Request logging
+	// Request logging with more details
 	app.Use(logger.New(logger.Config{
 		Format:     "${time} | ${status} | ${latency} | ${method} | ${path} | ${ip} | ${error}\n",
 		TimeFormat: "2006-01-02 15:04:05",
@@ -130,8 +105,56 @@ func main() {
 		Output:     os.Stdout,
 	}))
 
-	// Add OPTIONS handler for preflight requests
+	// Add detailed request debugging middleware
+	app.Use(func(c *fiber.Ctx) error {
+		fmt.Printf("\n=== Incoming Request ===\n")
+		fmt.Printf("Method: %s\n", c.Method())
+		fmt.Printf("Path: %s\n", c.Path())
+		fmt.Printf("Origin: %s\n", c.Get("Origin"))
+		fmt.Printf("Headers: %v\n", c.GetReqHeaders())
+		fmt.Printf("Query: %v\n", c.Query(""))
+		fmt.Printf("Body: %s\n", string(c.Body()))
+		fmt.Printf("=====================\n")
+		return c.Next()
+	})
+
+	// Add response debugging middleware
+	app.Use(func(c *fiber.Ctx) error {
+		err := c.Next()
+		fmt.Printf("\n=== Outgoing Response ===\n")
+		fmt.Printf("Status: %d\n", c.Response().StatusCode())
+		fmt.Printf("Headers: %v\n", c.GetRespHeaders())
+		fmt.Printf("Body: %s\n", string(c.Response().Body()))
+		fmt.Printf("======================\n")
+		return err
+	})
+
+	// Configure CORS with more secure settings and debug logging
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     "https://lifskill-web-frontend.onrender.com,https://lifskill-backend.onrender.com",
+		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, X-Requested-With, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Access-Control-Allow-Methods, Access-Control-Allow-Credentials",
+		ExposeHeaders:    "Set-Cookie",
+		AllowCredentials: true,
+		MaxAge:           3600,
+		Next: func(c *fiber.Ctx) bool {
+			fmt.Printf("\n=== CORS Check ===\n")
+			fmt.Printf("Origin: %s\n", c.Get("Origin"))
+			fmt.Printf("Method: %s\n", c.Method())
+			fmt.Printf("Path: %s\n", c.Path())
+			fmt.Printf("=================\n")
+			return false
+		},
+	}))
+
+	// Add OPTIONS handler for preflight requests with debug logging
 	app.Options("*", func(c *fiber.Ctx) error {
+		fmt.Printf("\n=== Preflight Request ===\n")
+		fmt.Printf("Origin: %s\n", c.Get("Origin"))
+		fmt.Printf("Method: %s\n", c.Method())
+		fmt.Printf("Path: %s\n", c.Path())
+		fmt.Printf("Headers: %v\n", c.GetReqHeaders())
+
 		origin := c.Get("Origin")
 		if origin == "https://lifskill-web-frontend.onrender.com" || origin == "https://lifskill-backend.onrender.com" {
 			c.Set("Access-Control-Allow-Origin", origin)
@@ -139,16 +162,29 @@ func main() {
 			c.Set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, X-Requested-With, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Access-Control-Allow-Methods, Access-Control-Allow-Credentials")
 			c.Set("Access-Control-Allow-Credentials", "true")
 			c.Set("Access-Control-Max-Age", "3600")
+
+			fmt.Printf("CORS Headers Set:\n")
+			fmt.Printf("Access-Control-Allow-Origin: %s\n", origin)
+			fmt.Printf("Access-Control-Allow-Methods: GET,POST,PUT,DELETE,OPTIONS\n")
+			fmt.Printf("Access-Control-Allow-Headers: Origin, Content-Type, Accept, Authorization, X-Requested-With, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Access-Control-Allow-Methods, Access-Control-Allow-Credentials\n")
+			fmt.Printf("Access-Control-Allow-Credentials: true\n")
+			fmt.Printf("Access-Control-Max-Age: 3600\n")
 		}
+		fmt.Printf("=====================\n")
 		return c.SendStatus(fiber.StatusNoContent)
 	})
 
-	// Add error handler for 404s
+	// Add error handler for 404s with debug logging
 	app.Use(func(c *fiber.Ctx) error {
 		err := c.Next()
 		if err != nil {
 			if err == fiber.ErrNotFound {
-				fmt.Printf("404 Not Found: %s %s\n", c.Method(), c.Path())
+				fmt.Printf("\n=== 404 Not Found ===\n")
+				fmt.Printf("Method: %s\n", c.Method())
+				fmt.Printf("Path: %s\n", c.Path())
+				fmt.Printf("Origin: %s\n", c.Get("Origin"))
+				fmt.Printf("Headers: %v\n", c.GetReqHeaders())
+				fmt.Printf("===================\n")
 				return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 					"error":  "Route not found",
 					"path":   c.Path(),
@@ -158,14 +194,6 @@ func main() {
 			return err
 		}
 		return nil
-	})
-
-	// Add debug logging for CORS
-	app.Use(func(c *fiber.Ctx) error {
-		fmt.Printf("Request: %s %s\n", c.Method(), c.Path())
-		fmt.Printf("Origin: %s\n", c.Get("Origin"))
-		fmt.Printf("Headers: %v\n", c.GetReqHeaders())
-		return c.Next()
 	})
 
 	fmt.Println("Starting application...")
