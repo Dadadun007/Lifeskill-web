@@ -131,9 +131,9 @@ func main() {
 
 	// Configure CORS with more secure settings and debug logging
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "https://lifskill-web-frontend.onrender.com,https://lifskill-backend.onrender.com,https://lifeskill-web.onrender.com",
+		AllowOrigins:     "*", // Allow all origins for now
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
-		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, X-Requested-With, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Access-Control-Allow-Methods, Access-Control-Allow-Credentials",
+		AllowHeaders:     "*", // Allow all headers for now
 		ExposeHeaders:    "Set-Cookie",
 		AllowCredentials: true,
 		MaxAge:           3600,
@@ -148,6 +148,28 @@ func main() {
 		},
 	}))
 
+	// Add response headers middleware
+	app.Use(func(c *fiber.Ctx) error {
+		origin := c.Get("Origin")
+		fmt.Printf("\n=== Setting Response Headers ===\n")
+		fmt.Printf("Origin: %s\n", origin)
+
+		// Always set CORS headers
+		c.Set("Access-Control-Allow-Origin", origin)
+		c.Set("Access-Control-Allow-Credentials", "true")
+		c.Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
+		c.Set("Access-Control-Allow-Headers", "*")
+
+		fmt.Printf("Set headers:\n")
+		fmt.Printf("Access-Control-Allow-Origin: %s\n", origin)
+		fmt.Printf("Access-Control-Allow-Credentials: true\n")
+		fmt.Printf("Access-Control-Allow-Methods: GET,POST,PUT,DELETE,OPTIONS\n")
+		fmt.Printf("Access-Control-Allow-Headers: *\n")
+		fmt.Printf("======================\n")
+
+		return c.Next()
+	})
+
 	// Add OPTIONS handler for preflight requests with debug logging
 	app.Options("*", func(c *fiber.Ctx) error {
 		fmt.Printf("\n=== Preflight Request ===\n")
@@ -157,71 +179,25 @@ func main() {
 		fmt.Printf("Headers: %v\n", c.GetReqHeaders())
 
 		origin := c.Get("Origin")
-		allowedOrigins := []string{
-			"https://lifskill-web-frontend.onrender.com",
-			"https://lifskill-backend.onrender.com",
-			"https://lifeskill-web.onrender.com",
-		}
-
-		// If no origin is set, allow the request
 		if origin == "" {
-			fmt.Printf("No Origin header, allowing request\n")
-			return c.SendStatus(fiber.StatusNoContent)
+			origin = "*"
 		}
 
-		// Check if origin is allowed
-		isAllowed := false
-		for _, allowedOrigin := range allowedOrigins {
-			if origin == allowedOrigin {
-				isAllowed = true
-				break
-			}
-		}
+		c.Set("Access-Control-Allow-Origin", origin)
+		c.Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
+		c.Set("Access-Control-Allow-Headers", "*")
+		c.Set("Access-Control-Allow-Credentials", "true")
+		c.Set("Access-Control-Max-Age", "3600")
 
-		if isAllowed {
-			c.Set("Access-Control-Allow-Origin", origin)
-			c.Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
-			c.Set("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, X-Requested-With, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Access-Control-Allow-Methods, Access-Control-Allow-Credentials")
-			c.Set("Access-Control-Allow-Credentials", "true")
-			c.Set("Access-Control-Max-Age", "3600")
-
-			fmt.Printf("CORS Headers Set:\n")
-			fmt.Printf("Access-Control-Allow-Origin: %s\n", origin)
-			fmt.Printf("Access-Control-Allow-Methods: GET,POST,PUT,DELETE,OPTIONS\n")
-			fmt.Printf("Access-Control-Allow-Headers: Origin, Content-Type, Accept, Authorization, X-Requested-With, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Access-Control-Allow-Methods, Access-Control-Allow-Credentials\n")
-			fmt.Printf("Access-Control-Allow-Credentials: true\n")
-			fmt.Printf("Access-Control-Max-Age: 3600\n")
-		} else {
-			fmt.Printf("Origin not allowed: %s\n", origin)
-		}
+		fmt.Printf("CORS Headers Set:\n")
+		fmt.Printf("Access-Control-Allow-Origin: %s\n", origin)
+		fmt.Printf("Access-Control-Allow-Methods: GET,POST,PUT,DELETE,OPTIONS\n")
+		fmt.Printf("Access-Control-Allow-Headers: *\n")
+		fmt.Printf("Access-Control-Allow-Credentials: true\n")
+		fmt.Printf("Access-Control-Max-Age: 3600\n")
 		fmt.Printf("=====================\n")
+
 		return c.SendStatus(fiber.StatusNoContent)
-	})
-
-	// Add response headers middleware
-	app.Use(func(c *fiber.Ctx) error {
-		origin := c.Get("Origin")
-		allowedOrigins := []string{
-			"https://lifskill-web-frontend.onrender.com",
-			"https://lifskill-backend.onrender.com",
-			"https://lifeskill-web.onrender.com",
-		}
-
-		// If no origin is set, allow the request
-		if origin == "" {
-			return c.Next()
-		}
-
-		// Check if origin is allowed
-		for _, allowedOrigin := range allowedOrigins {
-			if origin == allowedOrigin {
-				c.Set("Access-Control-Allow-Origin", origin)
-				c.Set("Access-Control-Allow-Credentials", "true")
-				break
-			}
-		}
-
-		return c.Next()
 	})
 
 	// Add error handler for 404s with debug logging
@@ -235,6 +211,15 @@ func main() {
 				fmt.Printf("Origin: %s\n", c.Get("Origin"))
 				fmt.Printf("Headers: %v\n", c.GetReqHeaders())
 				fmt.Printf("===================\n")
+
+				// Set CORS headers even for 404 responses
+				origin := c.Get("Origin")
+				if origin == "" {
+					origin = "*"
+				}
+				c.Set("Access-Control-Allow-Origin", origin)
+				c.Set("Access-Control-Allow-Credentials", "true")
+
 				return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 					"error":  "Route not found",
 					"path":   c.Path(),
