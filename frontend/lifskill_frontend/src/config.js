@@ -4,10 +4,10 @@ export const API_URL = import.meta.env.VITE_API_URL || 'https://lifskill-backend
 // Default fetch options
 export const defaultFetchOptions = {
   credentials: 'include',
-  mode: 'cors',
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
+    'Origin': window.location.origin,
   },
 };
 
@@ -49,21 +49,6 @@ export const fetchApi = async (path, options = {}) => {
   console.log('Current Origin:', window.location.origin);
 
   try {
-    // First make an OPTIONS request for preflight
-    if (options.method && options.method !== 'GET') {
-      const preflightOptions = {
-        method: 'OPTIONS',
-        credentials: 'include',
-        mode: 'cors',
-        headers: {
-          'Access-Control-Request-Method': options.method,
-          'Access-Control-Request-Headers': Object.keys(fetchOptions.headers).join(', '),
-        },
-      };
-      console.log('Making preflight request with options:', preflightOptions);
-      await fetch(url, preflightOptions);
-    }
-
     const response = await fetch(url, fetchOptions);
     console.log('Response status:', response.status);
     console.log('Response headers:', Object.fromEntries(response.headers.entries()));
