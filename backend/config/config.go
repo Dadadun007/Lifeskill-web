@@ -52,6 +52,13 @@ func getEnvAsInt(key string, defaultValue int) int {
 }
 
 func GetDSN() string {
+	// Check if we're running on Render (production)
+	if os.Getenv("RENDER") == "true" {
+		// Use the DATABASE_URL environment variable provided by Render
+		return os.Getenv("DATABASE_URL")
+	}
+
+	// Local development connection string
 	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		AppConfig.DBHost,
 		AppConfig.DBPort,
