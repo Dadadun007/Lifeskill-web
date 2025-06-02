@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"time"
 
@@ -99,7 +100,7 @@ func main() {
 
 	// Configure CORS with more secure settings
 	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "https://lifeskill-web-frontend.onrender.com",
+		AllowOrigins:     "https://lifeskill-web-frontend.onrender.com,http://localhost:5173",
 		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
 		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, X-Requested-With, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Access-Control-Allow-Methods, Access-Control-Allow-Credentials",
 		ExposeHeaders:    "Set-Cookie",
@@ -123,10 +124,19 @@ func main() {
 
 	// Request logging
 	app.Use(logger.New(logger.Config{
-		Format:     "${time} | ${status} | ${latency} | ${method} | ${path}\n",
+		Format:     "${time} | ${status} | ${latency} | ${method} | ${path} | ${ip} | ${error}\n",
 		TimeFormat: "2006-01-02 15:04:05",
 		TimeZone:   "Local",
+		Output:     os.Stdout,
 	}))
+
+	// Add debug logging for CORS
+	app.Use(func(c *fiber.Ctx) error {
+		fmt.Printf("Request: %s %s\n", c.Method(), c.Path())
+		fmt.Printf("Origin: %s\n", c.Get("Origin"))
+		fmt.Printf("Headers: %v\n", c.GetReqHeaders())
+		return c.Next()
+	})
 
 	fmt.Println("Starting application...")
 
