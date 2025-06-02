@@ -95,30 +95,30 @@ func main() {
 	database.ConnectDatabase()
 
 	// Security middleware
-	app.Use(helmet.New()) // Adds various HTTP headers for security
+	app.Use(helmet.New())
+
+	// Configure CORS with more secure settings
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     "https://lifeskill-web-frontend.onrender.com",
+		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, X-Requested-With, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Access-Control-Allow-Methods, Access-Control-Allow-Credentials",
+		ExposeHeaders:    "Set-Cookie",
+		AllowCredentials: true,
+		MaxAge:           3600,
+	}))
 
 	// Rate limiting
 	app.Use(limiter.New(limiter.Config{
-		Max:        100,             // Max count of requests
-		Expiration: 1 * time.Minute, // Expiration time of the limit
+		Max:        100,
+		Expiration: 1 * time.Minute,
 		KeyGenerator: func(c *fiber.Ctx) string {
-			return c.IP() // Use IP as key
+			return c.IP()
 		},
 		LimitReached: func(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
 				"error": "Too many requests, please try again later",
 			})
 		},
-	}))
-
-	// Configure CORS with more secure settings
-	app.Use(cors.New(cors.Config{
-		AllowOrigins:     "https://lifeskill-web-frontend.onrender.com",
-		AllowCredentials: true,
-		AllowHeaders:     "Origin, Content-Type, Accept, Authorization, X-Requested-With",
-		AllowMethods:     "GET,POST,PUT,DELETE,OPTIONS",
-		ExposeHeaders:    "Set-Cookie",
-		MaxAge:           3600, // 1 hour
 	}))
 
 	// Request logging
@@ -132,18 +132,19 @@ func main() {
 
 	// Serve static files with security headers
 	app.Static("/", "../frontend/lifskill_frontend/dist", fiber.Static{
-		MaxAge: 3600, // 1 hour cache
+		MaxAge: 3600,
 	})
 
 	// Serve uploaded images with security headers
 	app.Static("/uploads", config.AppConfig.UploadDir, fiber.Static{
-		MaxAge: 3600, // 1 hour cache
+		MaxAge: 3600,
 	})
 
 	fmt.Println("Application started successfully!")
 
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendFile("../frontend/lifskill_frontend/dist/index.html")
+	// Add OPTIONS handler for preflight requests
+	app.Options("*", func(c *fiber.Ctx) error {
+		return c.SendStatus(fiber.StatusNoContent)
 	})
 
 	// Public routes
