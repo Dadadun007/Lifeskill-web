@@ -75,9 +75,10 @@ func main() {
 	database.ConnectDatabase()
 
 	app.Use(cors.New(cors.Config{
-        AllowOrigins: "*",
-        AllowHeaders: "Origin, Content-Length, Content-Type, Authorization, user_id",
-    }))
+		AllowOrigins:     config.AppConfig.FrontendURL,
+		AllowHeaders:     "Origin, Content-Type, Accept",
+		AllowCredentials: true,
+	}))
 
 	fmt.Println("Starting application...")
 
