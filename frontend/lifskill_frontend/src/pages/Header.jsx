@@ -522,6 +522,7 @@ const handleCreatePost = async () => {
                     <option value="41-55">41-55</option>
                     <option value="56-70">56-70</option>
                     <option value="71-99">71+</option>
+                    <option value="0-99">ทุกวัย</option>
                   </select>
                 </div>
 
