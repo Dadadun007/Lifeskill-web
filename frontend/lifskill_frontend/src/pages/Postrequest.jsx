@@ -103,6 +103,30 @@ const PostRequests = () => {
     ? requests.filter(req => req.status === 'pending') // Only show pending posts
     : [];
 
+  // Helper function to convert to embeddable URL
+  function getYouTubeEmbedUrl(url) {
+    try {
+      const urlObj = new URL(url);
+
+      // Handle standard YouTube watch URLs
+      if (urlObj.hostname.includes('youtube.com')) {
+        const videoId = urlObj.searchParams.get('v');
+        if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+      }
+
+      // Handle short URLs like youtu.be/VIDEO_ID
+      if (urlObj.hostname === 'youtu.be') {
+        const videoId = urlObj.pathname.slice(1); // remove leading slash
+        return `https://www.youtube.com/embed/${videoId}`;
+      }
+
+      return '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+
   return (
     <div className="bg-gradient-to-br from-gray-50 via-white to-gray-50 min-h-screen">
       <Header />
@@ -296,10 +320,11 @@ const PostRequests = () => {
                   <h5 className="text-sm font-medium text-gray-700 mb-2">Related Video:</h5>
                   <div className="aspect-w-16 aspect-h-9">
                     <iframe
-                      src={selectedRequest.youtube_link.replace('watch?v=', 'embed/')}
+                      src={getYouTubeEmbedUrl(selectedRequest.youtube_link)}
                       className="w-full h-64 rounded-xl"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
+                      title="YouTube Video"
                     ></iframe>
                   </div>
                 </div>

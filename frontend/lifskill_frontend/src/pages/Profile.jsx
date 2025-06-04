@@ -610,11 +610,7 @@ const handleChangePasswordSubmit = async () => {
                   </div>
                   {post.picture ? (
                     <img
-                      src={
-                        post.picture.startsWith('http')
-                          ? post.picture
-                          : getImageUrl(post.picture)
-                      }
+                      src={`http://localhost:8080/uploads/${post.picture}`}
                       alt="Post"
                       className="w-full md:w-40 h-32 object-cover rounded-lg mb-4 md:mb-0 md:ml-4"
                       onError={e => {e.target.onerror=null; e.target.src='/default-avatar.png';}}
