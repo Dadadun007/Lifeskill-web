@@ -330,6 +330,28 @@ const Post = () => {
     ))
   );
 
+  // Share handler
+  const handleShare = () => {
+    const shareUrl = window.location.href;
+    const shareData = {
+      title: post?.title || 'Check out this post!',
+      text: post?.content || '',
+      url: shareUrl,
+    };
+    if (navigator.share) {
+      navigator.share(shareData).catch(() => {});
+    } else if (navigator.clipboard) {
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        alert('Link copied to clipboard!');
+      }, () => {
+        alert('Failed to copy link.');
+      });
+    } else {
+      // fallback for very old browsers
+      window.prompt('Copy this link:', shareUrl);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -383,7 +405,7 @@ const Post = () => {
               </div>
               <p className="text-gray-600 text-sm mt-1">Post owner</p>
             </div>
-            <button className="text-gray-400 hover:text-gray-600">
+            <button className="text-gray-400 hover:text-gray-600" onClick={handleShare} title="Share this post">
               <Share className="w-5 h-5" />
             </button>
           </div>
@@ -444,7 +466,7 @@ const Post = () => {
                 <span className="text-sm font-medium">{post.comments?.length || 0}</span>
               </button>
               
-              <button className="text-gray-600 hover:text-green-500">
+              <button className="text-gray-600 hover:text-green-500" onClick={handleShare} title="Share this post">
                 <Share className="w-5 h-5" />
               </button>
             </div>
