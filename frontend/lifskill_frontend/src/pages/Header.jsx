@@ -513,11 +513,15 @@ const handleCreatePost = async () => {
                     onChange={(e) => setAgeRecommend(e.target.value)}
                     className="w-20 px-2 py-1 bg-gray-100 rounded text-center text-sm border-none outline-none"
                   >
-                    <option value="0-5">0-5</option>
-                    <option value="6-10">6-10</option>
-                    <option value="11-15">11-15</option>
-                    <option value="16-19">16-19</option>
-                    <option value="20-99">20+</option>
+                    <option value="0-2">0-2</option>
+                    <option value="3-11">3-11</option>
+                    <option value="12-14">12-14</option>
+                    <option value="15-18">15-18</option>
+                    <option value="19-25">19-25</option>
+                    <option value="26-40">26-40</option>
+                    <option value="41-55">41-55</option>
+                    <option value="56-70">56-70</option>
+                    <option value="71-99">71+</option>
                   </select>
                 </div>
 
