@@ -107,7 +107,7 @@ const Post = () => {
       if (!response.ok) throw new Error('Failed to like post');
       const data = await response.json();
       setLiked(!liked);
-      setPost(prev => ({ ...prev, like: data.like })); // Update to use 'like' instead of 'likes'
+      setPost(prev => ({ ...prev, like: data.likes }));
     } catch (error) {
       console.error('Error liking post:', error);
     }
@@ -415,7 +415,7 @@ const Post = () => {
           
           {/* Post Content */}
           <div className="mb-6">
-            <p className="text-gray-700 mb-2">{post.content}</p>
+            <p className="text-gray-700 mb-2" style={{ whiteSpace: 'pre-line' }}>{post.content}</p>
           </div>
 
           {/* Post Image */}

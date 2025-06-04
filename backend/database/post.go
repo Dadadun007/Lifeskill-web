@@ -323,7 +323,7 @@ func SearchPosts(db *gorm.DB) fiber.Handler {
 			Preload("Categories").
 			Joins("LEFT JOIN post_categories pc ON pc.post_id = posts.id").
 			Joins("LEFT JOIN categories c ON c.id = pc.category_id").
-			Where("posts.title ILIKE ? OR c.categories_name ILIKE ?", "%"+query+"%", "%"+query+"%").
+			Where("(posts.title ILIKE ? OR c.categories_name ILIKE ?) AND posts.status = ?", "%"+query+"%", "%"+query+"%", "approved").
 			Distinct("posts.*").
 			Limit(limit).
 			Offset(offset).
