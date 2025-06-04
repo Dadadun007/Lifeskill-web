@@ -139,7 +139,15 @@ function Search() {
                         {/* Author Info */}
                         <div className="flex items-center gap-3">
                           <img
-                            src={post.user?.picture ? getImageUrl(post.user.picture) : 'https://via.placeholder.com/32'}
+                            src={
+                              post.user && post.user.picture
+                                ? (
+                                    post.user.picture.startsWith('http')
+                                      ? post.user.picture
+                                      : getImageUrl(post.user.picture)
+                                  )
+                                : "/default-avatar.png"
+                            }
                             alt={post.user?.username || 'User'}
                             className="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100"
                           />
@@ -189,7 +197,7 @@ function Search() {
                       {post.picture && (
                         <div className="lg:w-80 flex-shrink-0">
                           <img
-                            src={getImageUrl(post.picture)}
+                            src={`http://localhost:8080/uploads/${post.picture}`}
                             alt="Post image"
                             className="w-full h-48 lg:h-40 object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
                           />
