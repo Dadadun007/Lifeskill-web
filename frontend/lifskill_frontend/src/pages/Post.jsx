@@ -473,12 +473,15 @@ const Post = () => {
             
             <button 
               onClick={handleBookmark}
-              className={`${bookmarked ? 'text-yellow-500' : 'text-gray-600'} hover:text-yellow-500 ${!isLoggedIn && 'cursor-not-allowed opacity-50'}`}
-              title={!isLoggedIn ? "Please login to bookmark posts" : ""}
+              className={`${bookmarked ? 'text-yellow-500' : 'text-gray-600'} hover:text-yellow-500 ${!isLoggedIn && 'cursor-not-allowed opacity-50'} flex items-center space-x-2`}
+              title={!isLoggedIn ? "Please login to achieve posts" : ""}
             >
-              <Bookmark className={`w-5 h-5 ${bookmarked ? 'fill-current' : ''}`} />
+              <Bookmark className={`w-5 h-5  ${bookmarked ? 'fill-current' : ''}`} />
+              <span className="text-sm font-medium">Achieve post category</span>
             </button>
+            
           </div>
+          
 
           {/* Add Comment */}
           {isLoggedIn ? (
